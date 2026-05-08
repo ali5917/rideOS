@@ -1,7 +1,8 @@
 CC = gcc
 FLAGS = -pthread -lraylib -lm -lrt
-INC_MAIN = -Imain_server/include
-INC_REQ = -Irequest_server/include
+INC_SHARED = -Ishared/include
+INC_MAIN = -Imain_server/include $(INC_SHARED)
+INC_REQ = -Irequest_server/include $(INC_SHARED)
 
 all: main_server_bin request_server_bin
 
