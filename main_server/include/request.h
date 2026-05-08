@@ -4,18 +4,7 @@
 #include <pthread.h>
 #include <time.h>
 
-typedef enum {
-    NORMAL,
-    VIP,
-    EMERGENCY
-} RequestType;
-
-typedef enum {
-    REQUEST_WAITING,
-    REQUEST_ASSIGNED,
-    REQUEST_COMPLETED,
-    REQUEST_CANCELLED
-} RequestStatus;
+#include "../../shared/include/ipc_types.h"
 
 typedef struct {
     int id;

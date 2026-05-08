@@ -4,9 +4,9 @@
 #include <time.h>
 
 #include "ipc_types.h"
+#include "metrics.h"
 
 #define MAX_PENDING_VIEW 50
-#define MAX_DRIVERS 128
 
 // for req sever to main server
 typedef struct {

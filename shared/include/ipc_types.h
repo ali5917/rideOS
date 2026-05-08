@@ -1,7 +1,7 @@
 #ifndef IPC_TYPES_H
 #define IPC_TYPES_H
 
-#include "metrics.h"
+#define MAX_DRIVERS 128
 
 typedef enum {
     NORMAL,

@@ -5,17 +5,7 @@
 #include <time.h>
 #include <stdint.h>
 
-typedef enum {
-    DRIVER_OFFLINE,
-    DRIVER_ONLINE,
-    DRIVER_BUSY
-} DriverStatus;
-
-typedef enum {
-    DRIVER_STANDARD,
-    DRIVER_PLUS,
-    DRIVER_ELITE
-} DriverCategory;
+#include "../../shared/include/ipc_types.h"
 
 typedef struct Driver {
     int ID;
@@ -27,7 +17,6 @@ typedef struct Driver {
     time_t lastAssignedTime;
 } Driver;
 
-#define MAX_DRIVERS 20
 
 extern Driver driverPool[MAX_DRIVERS];
 extern int numDrivers;
