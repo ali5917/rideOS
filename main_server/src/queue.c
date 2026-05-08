@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../include/queue.h"
 
-// Priority: EMERGENCY (0) > VIP (1) > NORMAL (2)
+// Priority: EMERGENCY (3) > VIP (2) > NORMAL (1)
 int getPriority(RequestType type) {
     switch (type) {
         case EMERGENCY: 
