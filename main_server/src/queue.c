@@ -1,142 +1,133 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "../include/queue.h"
 
-// Priority: EMERGENCY > VIP > NORMAL
+// Priority: EMERGENCY (0) > VIP (1) > NORMAL (2)
 int getPriority(RequestType type) {
     switch (type) {
         case EMERGENCY: 
-            return 0; 
+            return 3; 
         case VIP:       
-            return 1;
+            return 2;
         case NORMAL:    
-            return 2; 
+            return 1; 
         default:        
-            return 3;
+            return 0;
     }
 }
 
-void initializeRequestQueue(PriorityQueue* q) {
-    q->size = 0;
-    pthread_mutex_init(&q->lock, NULL);
-    pthread_cond_init(&q->notEmpty, NULL);
+// to maintain heap property after insertion
+static void heapifyUp(PriorityQueue* pq, int index) {
+    while (index > 0) {
+        int parent = (index - 1) / 2;
+        if (getPriority(pq->heap[index]->type) > getPriority(pq->heap[parent]->type)) {
+            RideRequest* temp = pq->heap[index];
+            pq->heap[index] = pq->heap[parent];
+            pq->heap[parent] = temp;
+            index = parent;
+        } else {
+            break;
+        }
+    }
 }
 
-static void swap(RideRequest** a, RideRequest** b) {
-    RideRequest* temp = *a;
-    *a = *b;
-    *b = temp;
+// to maintain heap property after extraction
+static void heapifyDown(PriorityQueue* pq, int index) {
+    while (1) {
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+        int smallest = index;
+
+        if (left < pq->size && getPriority(pq->heap[left]->type) > getPriority(pq->heap[smallest]->type))
+            smallest = left;
+        if (right < pq->size && getPriority(pq->heap[right]->type) > getPriority(pq->heap[smallest]->type))
+            smallest = right;
+
+        if (smallest != index) {
+            RideRequest* temp = pq->heap[index];
+            pq->heap[index] = pq->heap[smallest];
+            pq->heap[smallest] = temp;
+            index = smallest;
+        } else {
+            break;
+        }
+    }
 }
 
-void insertRequest(PriorityQueue* q, RideRequest* req) {
-    pthread_mutex_lock(&q->lock);
+void initializeRequestQueue(PriorityQueue* pq) {
+    pq->size = 0;
+    pthread_mutex_init(&pq->lock, NULL);
+    pthread_cond_init(&pq->notEmpty, NULL);
+}
+
+void destroyRequestQueue(PriorityQueue* pq) {
+    pthread_mutex_destroy(&pq->lock);
+    pthread_cond_destroy(&pq->notEmpty);
+}
+
+void insertRequest(PriorityQueue* pq, RideRequest* req) {
+    pthread_mutex_lock(&pq->lock);
     
-    if (q->size >= MAX_QUEUE_SIZE) {
+    if (pq->size >= MAX_QUEUE_SIZE) {
         fprintf(stderr, "Queue Overflow!\n");
-        pthread_mutex_unlock(&q->lock);
+        pthread_mutex_unlock(&pq->lock);
         return;
     }
 
-    // Insert at the end and bubble up
-    int i = q->size++;
-    q->heap[i] = req;
+    pq->heap[pq->size] = req;
+    heapifyUp(pq, pq->size);
+    pq->size++;
 
-    while (i > 0) {
-        int parent = (i - 1) / 2;
-        if (getPriority(q->heap[i]->type) < getPriority(q->heap[parent]->type)) {
-            swap(&q->heap[i], &q->heap[parent]);
-            i = parent;
-        } else {
-            break;
-        }
-    }
-
-    pthread_cond_signal(&q->notEmpty);
-    pthread_mutex_unlock(&q->lock);
+    pthread_cond_signal(&pq->notEmpty);
+    pthread_mutex_unlock(&pq->lock);
 }
 
-RideRequest* getRequest(PriorityQueue* q) {
-    pthread_mutex_lock(&q->lock);
+RideRequest* getRequest(PriorityQueue* pq) {
+    pthread_mutex_lock(&pq->lock);
 
-    while (q->size == 0) {
-        pthread_cond_wait(&q->notEmpty, &q->lock);
+    while (pq->size == 0) {
+        pthread_cond_wait(&pq->notEmpty, &pq->lock);
     }
 
-    RideRequest* top = q->heap[0];
-    q->heap[0] = q->heap[--q->size];
+    RideRequest* top = pq->heap[0];
+    pq->heap[0] = pq->heap[pq->size - 1];
+    pq->size--;
 
-    // Bubble down
-    int i = 0;
-    while (1) {
-        int left = 2 * i + 1;
-        int right = 2 * i + 2;
-        int smallest = i;
-
-        if (left < q->size && getPriority(q->heap[left]->type) < getPriority(q->heap[smallest]->type)) {
-            smallest = left;
-        }
-        if (right < q->size && getPriority(q->heap[right]->type) < getPriority(q->heap[smallest]->type)) {
-            smallest = right;
-        }
-
-        if (smallest != i) {
-            swap(&q->heap[i], &q->heap[smallest]);
-            i = smallest;
-        } else {
-            break;
-        }
+    if (pq->size > 0) {
+        heapifyDown(pq, 0);
     }
 
-    pthread_mutex_unlock(&q->lock);
+    pthread_mutex_unlock(&pq->lock);
     return top;
 }
 
-void updateDeferCount(PriorityQueue* q) {
-    pthread_mutex_lock(&q->lock);
+void updateDeferCount(PriorityQueue* pq) {
+    pthread_mutex_lock(&pq->lock);
     
     int changed = 0;
-    for (int i = 0; i < q->size; i++) {
-        RideRequest* req = q->heap[i];
+    for (int i = 0; i < pq->size; i++) {
+        RideRequest* req = pq->heap[i];
         req->deferredCount++;
 
-        // Promotion Logic (Example: every 5 skips)
-        if (req->deferredCount >= 5) {
+        if (req->deferredCount > MAX_DEFER_LIMIT) {
             if (req->type == NORMAL) {
                 req->type = VIP;
-                req->deferredCount = 0;
-                changed = 1;
-                printf("[AGING] Request #%d promoted to VIP\n", req->id);
+                printf("AGING --- Request #%d promoted to VIP\n", req->id);
             } else if (req->type == VIP) {
                 req->type = EMERGENCY;
-                req->deferredCount = 0;
-                changed = 1;
-                printf("[AGING] Request #%d promoted to EMERGENCY\n", req->id);
+                printf("AGING --- Request #%d promoted to EMERGENCY\n", req->id);
             }
+            req->deferredCount = 0;
+            changed = 1;
         }
     }
 
-    // If types changed, the heap property might be violated. Rebuild it.
+    // rebuild the entire heap if priority changed
     if (changed) {
-        // Simple Floyd's build-heap (O(n))
-        for (int i = (q->size / 2) - 1; i >= 0; i--) {
-            int j = i;
-            while (1) {
-                int left = 2 * j + 1;
-                int right = 2 * j + 2;
-                int smallest = j;
-
-                if (left < q->size && getPriority(q->heap[left]->type) < getPriority(q->heap[smallest]->type))
-                    smallest = left;
-                if (right < q->size && getPriority(q->heap[right]->type) < getPriority(q->heap[smallest]->type))
-                    smallest = right;
-
-                if (smallest != j) {
-                    swap(&q->heap[j], &q->heap[smallest]);
-                    j = smallest;
-                } else {
-                    break;
-                }
-            }
+        for (int i = (pq->size / 2) - 1; i >= 0; i--) {
+            heapifyDown(pq, i);
         }
     }
 
-    pthread_mutex_unlock(&q->lock);
+    pthread_mutex_unlock(&pq->lock);
 }
