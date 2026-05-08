@@ -24,11 +24,11 @@ volatile sig_atomic_t systemRunning = 1;
 // signal handler
 void handleShutdown(int sig) {
     const char *msg = "\nMAIN --- Signal received, shutting down...\n";
-    write(STDOUT_FILENO, msg, 44); // 44 is the length of the string
+    write(STDOUT_FILENO, msg, strlen(msg)); 
     systemRunning = 0;
 }
 
-// Helper: Fill the SharedState for the GUI
+// Fill the SharedState for the GUI
 void updateSharedState() {
     if (!sharedState) return;
     
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
             pthread_t reqTid;
             if (pthread_create(&reqTid, NULL, requestThread, (void*)newReq) != 0) {
                 perror("MAIN --- Failed to spawn request thread");
-                free(newReq);
+                destroyRequest(newReq);
             } else {
                 pthread_detach(reqTid);
             }
@@ -128,6 +128,7 @@ int main(int argc, char *argv[]) {
 
     // cleanup
     printf("MAIN --- Waiting for threads to finish...\n");
+    wakeAllRequests(&requestQueue);
     pthread_join(dispatcherTid, NULL);
     
     destroyRequestQueue(&requestQueue);

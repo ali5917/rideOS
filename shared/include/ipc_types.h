@@ -19,14 +19,13 @@ typedef enum {
 typedef enum {
     DRIVER_OFFLINE,
     DRIVER_ONLINE,
-    DRIVER_BUSY,
-    DRIVER_GOING_OFFLINE
+    DRIVER_BUSY
 } DriverStatus;
 
 typedef enum {
     DRIVER_STANDARD,
     DRIVER_PLUS,
-    DRIVER_EMERGENCY
+    DRIVER_ELITE
 } DriverCategory;
 
 #endif

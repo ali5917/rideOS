@@ -41,8 +41,8 @@ void* requestThread(void* arg) {
     }
     pthread_mutex_unlock(&req->waitMutex);
 
-    // If assigned, the thread exits normally. 
-    // If cancelled, it might need to notify metrics (handled by friend's logger/metrics).
+    // if assigned, the thread exits normally.
+    // if cancelled, it might need to notify metrics (handled by friend's logger/metrics).
     pthread_exit(0);
 }
 
@@ -74,5 +74,16 @@ void* rideThread(void* arg) {
     // TODO: Call friend's update_metrics() and log_event() here
     // TODO: Trigger Shared Memory update via IPC
 
+    destroyRequest(req);
+
     pthread_exit(0);
+}
+
+void destroyRequest(RideRequest* req) {
+    if (req == NULL) {
+        return;
+    }
+    pthread_mutex_destroy(&req->waitMutex);
+    pthread_cond_destroy(&req->assignedCond);
+    free(req);
 }

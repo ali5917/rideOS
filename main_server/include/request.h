@@ -35,5 +35,6 @@ typedef struct {
 
 void* requestThread(void* arg);
 void* rideThread(void* arg);
+void destroyRequest(RideRequest* req);
 
 #endif

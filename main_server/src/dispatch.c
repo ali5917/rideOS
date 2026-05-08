@@ -13,14 +13,59 @@ extern PriorityQueue requestQueue;
 extern Driver driverPool[MAX_DRIVERS];
 extern int numDrivers;
 extern pthread_mutex_t driverMutex;
-extern int systemRunning;
+extern volatile sig_atomic_t systemRunning;
 
 // check if a driver category can handle a request type
 static int canHandle(DriverCategory category, RequestType type) {
-    if (type == NORMAL) return 1; 
+    if (type == NORMAL) return 1;
     if (type == VIP && (category == DRIVER_PLUS || category == DRIVER_ELITE)) return 1;
     if (type == EMERGENCY && category == DRIVER_ELITE) return 1;
     return 0;
+}
+
+static int findPreferredDriverIndex(RequestType type) {
+    int match = -1;
+
+    if (type == EMERGENCY) {
+        for (int i = 0; i < numDrivers; i++) {
+            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    if (type == VIP) {
+        for (int i = 0; i < numDrivers; i++) {
+            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
+                return i;
+            }
+        }
+        for (int i = 0; i < numDrivers; i++) {
+            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    for (int i = 0; i < numDrivers; i++) {
+        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_STANDARD) {
+            return i;
+        }
+    }
+    for (int i = 0; i < numDrivers; i++) {
+        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
+            return i;
+        }
+    }
+    for (int i = 0; i < numDrivers; i++) {
+        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
+            return i;
+        }
+    }
+
+    return match;
 }
 
 static const char* getRequestTypeString(RequestType type) {
@@ -37,23 +82,31 @@ void* dispatcherThread(void* arg) {
 
     while (systemRunning) {
         // get the request 
-        RideRequest* req = getRequest(&requestQueue);
+        RideRequest* req = getRequest(&requestQueue, &systemRunning);
+        if (req == NULL) {
+            break;
+        }
 
-        // skip cancelled request
+        pthread_mutex_lock(&req->waitMutex);
         if (req->status == REQUEST_CANCELLED) {
+            pthread_mutex_unlock(&req->waitMutex);
             printf("DISPATCHER --- Skipping cancelled Request #%d\n", req->id);
-            // Memory cleanup for req should be handled carefully (e.g., in main)
+            destroyRequest(req);
             continue;
         }
+        pthread_mutex_unlock(&req->waitMutex);
 
         // find a suitable driver
         int foundDriverIndex = -1;
         pthread_mutex_lock(&driverMutex);
-        
-        for (int i = 0; i < numDrivers; i++) {
-            if (driverPool[i].status == DRIVER_ONLINE && canHandle(driverPool[i].category, req->type)) {
-                foundDriverIndex = i;
-                break;
+
+        foundDriverIndex = findPreferredDriverIndex(req->type);
+        if (foundDriverIndex == -1) {
+            for (int i = 0; i < numDrivers; i++) {
+                if (driverPool[i].status == DRIVER_ONLINE && canHandle(driverPool[i].category, req->type)) {
+                    foundDriverIndex = i;
+                    break;
+                }
             }
         }
 
@@ -64,14 +117,22 @@ void* dispatcherThread(void* arg) {
             driver->currentRequestID = req->id;
             driver->lastAssignedTime = time(NULL);
 
-            pthread_mutex_unlock(&driverMutex);
-
             // update request status
             pthread_mutex_lock(&req->waitMutex);
+            if (req->status == REQUEST_CANCELLED) {
+                pthread_mutex_unlock(&req->waitMutex);
+                driver->status = DRIVER_ONLINE;
+                driver->currentRequestID = -1;
+                pthread_mutex_unlock(&driverMutex);
+                destroyRequest(req);
+                continue;
+            }
             req->status = REQUEST_ASSIGNED;
             req->assignedDriverId = driver->ID;
             pthread_cond_signal(&req->assignedCond);
             pthread_mutex_unlock(&req->waitMutex);
+
+            pthread_mutex_unlock(&driverMutex);
 
             printf("DISPATCHER --- Assigned Request #%d to Driver #%d (%s)\n", req->id, driver->ID, getRequestTypeString(req->type));
 

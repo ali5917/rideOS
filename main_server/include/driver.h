@@ -10,11 +10,10 @@ typedef enum {
     DRIVER_BUSY
 } DriverStatus;
 
-
 typedef enum {
-    DRIVER_STANDARD,        // NORMAL requests only
-    DRIVER_PLUS,            // NORMAL and VIP
-    DRIVER_ELITE            // all three, preferred for EMERGENCY
+    DRIVER_STANDARD,
+    DRIVER_PLUS,
+    DRIVER_ELITE
 } DriverCategory;
 
 typedef struct Driver {

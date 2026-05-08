@@ -82,11 +82,16 @@ void insertRequest(PriorityQueue* pq, RideRequest* req) {
     pthread_mutex_unlock(&pq->lock);
 }
 
-RideRequest* getRequest(PriorityQueue* pq) {
+RideRequest* getRequest(PriorityQueue* pq, volatile sig_atomic_t *running) {
     pthread_mutex_lock(&pq->lock);
 
-    while (pq->size == 0) {
+    while (pq->size == 0 && running != NULL && *running) {
         pthread_cond_wait(&pq->notEmpty, &pq->lock);
+    }
+
+    if (pq->size == 0) {
+        pthread_mutex_unlock(&pq->lock);
+        return NULL;
     }
 
     RideRequest* top = pq->heap[0];
@@ -101,6 +106,12 @@ RideRequest* getRequest(PriorityQueue* pq) {
     return top;
 }
 
+void wakeAllRequests(PriorityQueue* pq) {
+    pthread_mutex_lock(&pq->lock);
+    pthread_cond_broadcast(&pq->notEmpty);
+    pthread_mutex_unlock(&pq->lock);
+}
+
 void updateDeferCount(PriorityQueue* pq) {
     pthread_mutex_lock(&pq->lock);
     
@@ -109,15 +120,15 @@ void updateDeferCount(PriorityQueue* pq) {
         RideRequest* req = pq->heap[i];
         req->deferredCount++;
 
-        if (req->deferredCount > MAX_DEFER_LIMIT) {
-            if (req->type == NORMAL) {
-                req->type = VIP;
-                printf("AGING --- Request #%d promoted to VIP\n", req->id);
-            } else if (req->type == VIP) {
-                req->type = EMERGENCY;
-                printf("AGING --- Request #%d promoted to EMERGENCY\n", req->id);
-            }
+        if (req->type == NORMAL && req->deferredCount >= AGING_NORMAL_TO_VIP) {
+            req->type = VIP;
             req->deferredCount = 0;
+            printf("AGING --- Request #%d promoted to VIP\n", req->id);
+            changed = 1;
+        } else if (req->type == VIP && req->deferredCount >= AGING_VIP_TO_EMERGENCY) {
+            req->type = EMERGENCY;
+            req->deferredCount = 0;
+            printf("AGING --- Request #%d promoted to EMERGENCY\n", req->id);
             changed = 1;
         }
     }
