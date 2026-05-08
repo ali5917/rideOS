@@ -6,14 +6,14 @@
 #include <stdio.h>
 #include <string.h>
 
-static double get_wait_seconds(const RideRequest *req) {
+static double getWaitSeconds(const RideRequest *req) {
 	if (req == NULL || req->requestTime == 0) {
 		return 0.0;
 	}
 	return difftime(time(NULL), req->requestTime);
 }
 
-static void add_wait_bucket(Metrics *m, RequestType type, double waitSeconds) {
+static void addWaitBucket(Metrics *m, RequestType type, double waitSeconds) {
 	switch (type) {
 		case NORMAL:
 			m->totalWaitNormal += waitSeconds;
@@ -56,7 +56,7 @@ void metricsRecordCompleted(Metrics *m, const RideRequest *req) {
 	}
 	pthread_mutex_lock(&m->lock);
 	m->totalCompleted += 1;
-	add_wait_bucket(m, req->originalType, get_wait_seconds(req));
+	addWaitBucket(m, req->originalType, getWaitSeconds(req));
 	if (req->rideDuration > 0) {
 		m->totalBusySeconds += (double)req->rideDuration;
 	}
@@ -69,7 +69,7 @@ void metricsRecordCancelled(Metrics *m, const RideRequest *req) {
 	}
 	pthread_mutex_lock(&m->lock);
 	m->totalCancelled += 1;
-	add_wait_bucket(m, req->originalType, get_wait_seconds(req));
+	addWaitBucket(m, req->originalType, getWaitSeconds(req));
 	pthread_mutex_unlock(&m->lock);
 }
 
@@ -108,13 +108,13 @@ void metricsSnapshot(const Metrics *m, MetricsSnapshot *out, int numDrivers, int
 	pthread_mutex_unlock((pthread_mutex_t *)&m->lock);
 }
 
-void metrics_report(const Metrics *m, int numDrivers) {
+void metricsReport(const Metrics *m, int numDrivers) {
 	if (m == NULL) {
 		return;
 	}
 
 	MetricsSnapshot snap;
-	metrics_snapshot(m, &snap, numDrivers, 0, 1.0f);
+	metricsSnapshot(m, &snap, numDrivers, 0, 1.0f);
 
 	printf("\n=== Metrics Report ===\n");
 	printf("Total created:   %d\n", snap.totalCreated);

@@ -12,6 +12,7 @@
 #include "../include/ipc.h"
 #include "../include/logger.h"
 #include "../include/metrics.h"
+#include "../include/state.h"
 
 // Define global variables
 PriorityQueue requestQueue;
@@ -53,7 +54,7 @@ int main(int argc, char *argv[]) {
     // initialize core data structures
     initializeRequestQueue(&requestQueue);
     pthread_mutex_init(&driverMutex, NULL);
-    metrics_init(&metrics);
+    metricsInit(&metrics);
 
     if (loggerInit("rideos.log") != 0) {
         fprintf(stderr, "MAIN --- Failed to initialize logger.\n");
@@ -135,6 +136,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    updateSharedState();
+
     // cleanup
     printf("MAIN --- Waiting for threads to finish...\n");
     wakeAllRequests(&requestQueue);
@@ -143,7 +146,7 @@ int main(int argc, char *argv[]) {
     destroyRequestQueue(&requestQueue);
     pthread_mutex_destroy(&driverMutex);
 
-    metrics_report(&metrics, numDrivers);
+    metricsReport(&metrics, numDrivers);
     loggerClose();
     
     pipeCleanup();

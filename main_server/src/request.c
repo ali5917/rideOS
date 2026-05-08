@@ -9,6 +9,7 @@
 #include "../include/ipc.h"
 #include "../include/logger.h"
 #include "../include/metrics.h"
+#include "../include/state.h"
 
 // Global references defined in main.c
 extern PriorityQueue requestQueue;
@@ -21,11 +22,12 @@ void* requestThread(void* arg) {
     req->requestTime = time(NULL);          // assign the current time
     req->status = REQUEST_WAITING;
 
-    metrics_record_created(&metrics, req);
+    metricsRecordCreated(&metrics, req);
     loggerLogEvent("REQUEST_CREATED", req->id, NULL);
     
     // insert into the priority queue and signal dispatcher
     insertRequest(&requestQueue, req);
+    updateSharedState();
     
     // calculate timeout deadline
     struct timespec ts;
@@ -41,8 +43,9 @@ void* requestThread(void* arg) {
                 req->status = REQUEST_CANCELLED;
                 printf("TIMEOUT --- Request #%d timed out after %ds and cancelled itself.\n", 
                        req->id, req->timeoutSeconds);
-                  metrics_record_cancelled(&metrics, req);
-                  logger_log_event("REQUEST_CANCELLED", req->id, "timeout");
+                  metricsRecordCancelled(&metrics, req);
+                  loggerLogEvent("REQUEST_CANCELLED", req->id, "timeout");
+                updateSharedState();
             }
             break;
         }
@@ -79,8 +82,9 @@ void* rideThread(void* arg) {
     printf("COMPLETED --- Request #%d finished. Driver #%d is now ONLINE.\n", 
            req->id, req->assignedDriverId);
 
-        metrics_record_completed(&metrics, req);
-        logger_log_event("REQUEST_COMPLETED", req->id, NULL);
+        metricsRecordCompleted(&metrics, req);
+        loggerLogEvent("REQUEST_COMPLETED", req->id, NULL);
+        updateSharedState();
 
     destroyRequest(req);
 
