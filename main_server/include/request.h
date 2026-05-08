@@ -2,12 +2,13 @@
 #define REQUEST_H
 
 #include <pthread.h>
+#include <pthread.h>
 #include <time.h>
 
 typedef enum {
     NORMAL,
-    EMERGENCY,
-    VIP
+    VIP,
+    EMERGENCY
 } RequestType;
 
 typedef enum {

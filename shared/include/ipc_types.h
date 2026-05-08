@@ -1,0 +1,32 @@
+#ifndef IPC_TYPES_H
+#define IPC_TYPES_H
+
+#include "metrics.h"
+
+typedef enum {
+    NORMAL,
+    VIP,
+    EMERGENCY
+} RequestType;
+
+typedef enum {
+    REQUEST_WAITING,
+    REQUEST_ASSIGNED,
+    REQUEST_COMPLETED,
+    REQUEST_CANCELLED
+} RequestStatus;
+
+typedef enum {
+    DRIVER_OFFLINE,
+    DRIVER_ONLINE,
+    DRIVER_BUSY,
+    DRIVER_GOING_OFFLINE
+} DriverStatus;
+
+typedef enum {
+    DRIVER_STANDARD,
+    DRIVER_PLUS,
+    DRIVER_EMERGENCY
+} DriverCategory;
+
+#endif

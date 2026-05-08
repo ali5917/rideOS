@@ -1,7 +1,7 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
-// #include <time.h>
+#include <time.h>
 #include <stdint.h>
 
 typedef enum {
@@ -27,4 +27,5 @@ typedef struct Driver {
 
 extern pthread_mutex_t driverMutex;
 
+#endif
 #endif
