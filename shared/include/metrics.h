@@ -1,3 +1,6 @@
+#ifndef METRICS_SNAPSHOT_H
+#define METRICS_SNAPSHOT_H
+
 typedef struct {
     int totalCreated;
     int totalCompleted;
@@ -12,3 +15,5 @@ typedef struct {
     int surgeActive;
     float surgeMultiplier;
 } MetricsSnapshot;
+
+#endif
