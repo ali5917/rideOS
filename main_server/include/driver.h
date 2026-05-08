@@ -1,7 +1,7 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
-// #include <time.h>
+#include <time.h>
 #include <stdint.h>
 
 typedef enum {
@@ -24,3 +24,5 @@ typedef struct Driver {
     time_t lastStatusChange;
     time_t lastAssignedTime;
 } Driver;
+
+#endif
