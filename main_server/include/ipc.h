@@ -2,14 +2,15 @@
 #define IPC_H
 
 #include "../../shared/include/ipc_shared.h"
+#include "request.h"
 
-int ipc_init_request_pipe(void);
-int ipc_init_shared_memory(SharedState **state);
-int ipc_init_shm_lock(void);
-int ipc_read_pipe_request(RideRequest *out, int timeoutSeconds);
-void ipc_write_shared_state(const SharedState *frame);
-void ipc_pipe_cleanup(void);
-void ipc_shm_cleanup(void);
-void ipc_shm_lock_cleanup(void);
+int initRequestPipe(void);
+int initSharedMemory(SharedState **state);
+int initShmLock(void);
+int readPipeRequest(RideRequest *out, int timeoutSeconds);
+void writeSharedState(const SharedState *frame);
+void pipeCleanup(void);
+void shmCleanup(void);
+void shmLockCleanup(void);
 
 #endif

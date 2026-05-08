@@ -3,14 +3,14 @@
 
 #include "../../shared/include/ipc_shared.h"
 
-int ipc_init_request_pipe(void);
-int ipc_write_pipe_request(const PipeRequest *req);
-void ipc_pipe_cleanup(void);
+int initRequestPipe(void);
+int writePipeRequest(const PipeRequest *req);
+void pipeCleanup(void);
 
-int ipc_init_shared_memory(SharedState **state);
-int ipc_init_shm_lock(void);
-int ipc_read_shared_state(SharedState *out);
-void ipc_shm_cleanup(void);
-void ipc_shm_lock_cleanup(void);
+int initSharedMemory(SharedState **state);
+int initShmLock(void);
+int readSharedState(SharedState *out);
+void shmCleanup(void);
+void shmLockCleanup(void);
 
 #endif

@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
         driverPool[i].ID = i + 1;
         driverPool[i].status = DRIVER_ONLINE;
         
-        // assign categories: Standard, Plus, Elite
+        // assign categories
         if (i % 3 == 0) driverPool[i].category = DRIVER_ELITE;
         else if (i % 3 == 1) driverPool[i].category = DRIVER_PLUS;
         else driverPool[i].category = DRIVER_STANDARD;
@@ -66,20 +66,20 @@ int main(int argc, char *argv[]) {
     }
 
     // initialize IPC
-    if (ipc_init_request_pipe() == -1) {
+    if (initRequestPipe() == -1) {
         fprintf(stderr, "MAIN --- Failed to initialize request pipe.\n");
         return EXIT_FAILURE;
     }
-    if (ipc_init_shared_memory(&sharedState) == -1) {
+    if (initSharedMemory(&sharedState) == -1) {
         fprintf(stderr, "MAIN --- Failed to initialize shared memory.\n");
         return EXIT_FAILURE;
     }
-    if (ipc_init_shm_lock() == -1) {
+    if (initShmLock() == -1) {
         fprintf(stderr, "MAIN --- Failed to initialize shared memory lock.\n");
         return EXIT_FAILURE;
     }
 
-    // 4. Start the dispatcher thread
+    // start the dispatcher thread
     pthread_t dispatcherTid;
     if (pthread_create(&dispatcherTid, NULL, dispatcherThread, NULL) != 0) {
         perror("MAIN --- Failed to create dispatcher thread");
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     printf("MAIN --- Dispatcher started. Waiting for requests...\n");
 
-    // 5. Main loop: Read from pipe and spawn request threads
+    // main loop - read from pipe and spawn request threads
     while (systemRunning) {
         RideRequest *newReq = malloc(sizeof(RideRequest));
         if (!newReq) {
@@ -96,15 +96,14 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // Initialize synchronization objects for the new request
         pthread_mutex_init(&newReq->waitMutex, NULL);
         pthread_cond_init(&newReq->assignedCond, NULL);
 
-        // ipc_read_pipe_request returns 0 on success, 1 on "no data" (non-blocking)
-        int res = ipc_read_pipe_request(newReq, 30); // Default 30s timeout
+        // ipc_readPipeRequest returns 0 on success, 1 on "no data"
+        int res = readPipeRequest(newReq, 30);      // 30s timeout
         
         if (res == 0) {
-            printf("MAIN --- Received Request #%d via pipe. Spawning thread...\n", newReq->id);
+            printf("MAIN --- Received Ride Request #%d.\n", newReq->id);
             
             pthread_t reqTid;
             if (pthread_create(&reqTid, NULL, requestThread, (void*)newReq) != 0) {
@@ -114,29 +113,29 @@ int main(int argc, char *argv[]) {
                 pthread_detach(reqTid);
             }
         } else if (res == 1) {
-            // No requests in pipe, sleep briefly to avoid high CPU usage
+            // no requests in pipe
             free(newReq);
             usleep(100000); 
         } else {
-            // Error reading pipe
+            // error reading pipe
             free(newReq);
             if (systemRunning) {
-                fprintf(stderr, "MAIN --- Pipe error, retrying...\n");
+                fprintf(stderr, "MAIN --- Pipe error, retrying.\n");
                 sleep(1);
             }
         }
     }
 
-    // 6. Cleanup
+    // cleanup
     printf("MAIN --- Waiting for threads to finish...\n");
     pthread_join(dispatcherTid, NULL);
     
     destroyRequestQueue(&requestQueue);
     pthread_mutex_destroy(&driverMutex);
     
-    ipc_pipe_cleanup();
-    ipc_shm_cleanup();
-    ipc_shm_lock_cleanup();
+    pipeCleanup();
+    shmCleanup();
+    shmLockCleanup();
 
     printf("MAIN --- Shutdown complete.\n");
     return EXIT_SUCCESS;
