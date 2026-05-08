@@ -33,4 +33,7 @@ typedef struct {
     pthread_cond_t assignedCond;  // signaled by dispatcher when a driver is assigned
 } RideRequest;
 
+void* requestThread(void* arg);
+void* rideThread(void* arg);
+
 #endif

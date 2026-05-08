@@ -13,7 +13,7 @@ int getPriority(RequestType type) {
             return 1; 
         default:        
             return 0;
-    }
+    }   
 }
 
 // to maintain heap property after insertion

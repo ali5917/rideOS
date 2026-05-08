@@ -1,11 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <time.h>
 #include "../include/request.h"
 #include "../include/queue.h"
+#include "../include/driver.h"
 #include "../include/logger.h"
 #include "../include/ipc.h"
 
-// TODO: Implement request_thread function.
-// TODO: Logic: insert into PriorityQueue -> signal dispatcher -> pthread_cond_timedwait (per-category timeout).
-// TODO: Handle Happy path (ASSIGNED) vs Timeout path (CANCELLED).
+// Global references defined in main.c
+extern PriorityQueue requestQueue;
+extern pthread_mutex_t driverMutex;
 
-// TODO: Implement ride_thread function.
-// TODO: Logic: apply surge pricing if queue size > threshold -> sleep (duration) -> mark driver FREE -> signal dispatcher -> update metrics.
+void* requestThread(void* arg) {
+    RideRequest* req = (RideRequest*)arg;
+    
+    req->requestTime = time(NULL);
+    req->status = REQUEST_WAITING;
+    
+    // insert into the priority queue and signal dispatcher
+    insertRequest(&requestQueue, req);
+    
+    // Calculate timeout deadline
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += req->timeoutSeconds;
+
+    pthread_mutex_lock(&req->waitMutex);
+    while (req->status == REQUEST_WAITING) {
+        int rc = pthread_cond_timedwait(&req->assignedCond, &req->waitMutex, &ts);
+        
+        if (rc == ETIMEDOUT) {
+            if (req->status == REQUEST_WAITING) {
+                req->status = REQUEST_CANCELLED;
+                printf("[TIMEOUT] Request #%d timed out after %ds and cancelled itself.\n", 
+                       req->id, req->timeoutSeconds);
+            }
+            break;
+        }
+    }
+    pthread_mutex_unlock(&req->waitMutex);
+
+    // If assigned, the thread exits normally. 
+    // If cancelled, it might need to notify metrics (handled by friend's logger/metrics).
+    return NULL;
+}
+
+void* ride_thread(void* arg) {
+    RideRequest* req = (RideRequest*)arg;
+
+    // Simulate the ride
+    printf("[RIDE] Started Request #%d | Driver #%d | Duration: %ds\n", 
+           req->id, req->assignedDriverId, req->rideDuration);
+    
+    sleep(req->rideDuration);
+
+    // Release the driver
+    pthread_mutex_lock(&driverMutex);
+    driverPool[req->assignedDriverId].status = DRIVER_ONLINE;
+    driverPool[req->assignedDriverId].ridesCompleted++;
+    pthread_mutex_unlock(&driverMutex);
+
+    req->status = REQUEST_COMPLETED;
+    printf("[COMPLETED] Request #%d finished. Driver #%d is now ONLINE.\n", 
+           req->id, req->assignedDriverId);
+
+    // TODO: Call friend's update_metrics() and log_event() here
+    // TODO: Trigger Shared Memory update via IPC
+
+    return NULL;
+}

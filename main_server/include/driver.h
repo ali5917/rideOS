@@ -24,3 +24,7 @@ typedef struct Driver {
     time_t lastStatusChange;
     time_t lastAssignedTime;
 } Driver;
+
+extern pthread_mutex_t driverMutex;
+
+#endif
