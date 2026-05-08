@@ -2,7 +2,6 @@
 #define REQUEST_H
 
 #include <pthread.h>
-#include <pthread.h>
 #include <time.h>
 
 typedef enum {

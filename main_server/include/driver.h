@@ -7,8 +7,9 @@
 typedef enum {
     DRIVER_OFFLINE,
     DRIVER_ONLINE,
-    DRIVER_BUSY,
+    DRIVER_BUSY
 } DriverStatus;
+
 
 typedef enum {
     DRIVER_STANDARD,        // NORMAL requests only
@@ -26,7 +27,10 @@ typedef struct Driver {
     time_t lastAssignedTime;
 } Driver;
 
+#define MAX_DRIVERS 20
+
+extern Driver driverPool[MAX_DRIVERS];
+extern int numDrivers;
 extern pthread_mutex_t driverMutex;
 
-#endif
 #endif

@@ -6,7 +6,6 @@
 #include "../include/request.h"
 #include "../include/queue.h"
 #include "../include/driver.h"
-#include "../include/logger.h"
 #include "../include/ipc.h"
 
 // Global references defined in main.c
@@ -56,10 +55,16 @@ void* rideThread(void* arg) {
     
     sleep(req->rideDuration);
 
-    // Release the driver
+    // Release the driver (use assignedDriverId as pool index)
     pthread_mutex_lock(&driverMutex);
-    driverPool[req->assignedDriverId].status = DRIVER_ONLINE;
-    driverPool[req->assignedDriverId].ridesCompleted++;
+    for (int i = 0; i < numDrivers; i++) {
+        if (driverPool[i].ID == req->assignedDriverId) {
+            driverPool[i].status = DRIVER_ONLINE;
+            driverPool[i].ridesCompleted++;
+            driverPool[i].currentRequestID = -1;
+            break;
+        }
+    }
     pthread_mutex_unlock(&driverMutex);
 
     req->status = REQUEST_COMPLETED;
@@ -69,5 +74,5 @@ void* rideThread(void* arg) {
     // TODO: Call friend's update_metrics() and log_event() here
     // TODO: Trigger Shared Memory update via IPC
 
-    pthread_exit(0)
+    pthread_exit(0);
 }
