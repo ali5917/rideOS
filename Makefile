@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = -pthread -lraylib -lm -lrt
+FLAGS = -pthread -lraylib -lX11 -lXrandr -lXinerama -lXi -lXcursor -lm -ldl -lrt
 INC_SHARED = -Ishared/include
 INC_MAIN = -Imain_server/include $(INC_SHARED)
 INC_REQ = -Irequest_server/include $(INC_SHARED)
