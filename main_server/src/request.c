@@ -16,13 +16,13 @@ extern pthread_mutex_t driverMutex;
 void* requestThread(void* arg) {
     RideRequest* req = (RideRequest*)arg;
     
-    req->requestTime = time(NULL);
+    req->requestTime = time(NULL);          // assign the current time
     req->status = REQUEST_WAITING;
     
     // insert into the priority queue and signal dispatcher
     insertRequest(&requestQueue, req);
     
-    // Calculate timeout deadline
+    // calculate timeout deadline
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += req->timeoutSeconds;
@@ -47,7 +47,7 @@ void* requestThread(void* arg) {
     return NULL;
 }
 
-void* ride_thread(void* arg) {
+void* rideThread(void* arg) {
     RideRequest* req = (RideRequest*)arg;
 
     // Simulate the ride

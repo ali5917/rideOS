@@ -21,6 +21,7 @@ typedef struct Driver {
     DriverCategory category;
     DriverStatus status;
     int currentRequestID;
+    int ridesCompleted;
     time_t lastStatusChange;
     time_t lastAssignedTime;
 } Driver;
