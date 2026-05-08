@@ -1,7 +1,7 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
-#include <time.h>
+// #include <time.h>
 #include <stdint.h>
 
 typedef enum {
@@ -12,9 +12,9 @@ typedef enum {
 } DriverStatus;
 
 typedef enum {
-    DRIVER_STANDARD, // std cant take vip/emergency ride requests
-    DRIVER_PLUS, // can take vip
-    DRIVER_EMERGENCY // preferred for emergency, can take all
+    DRIVER_STANDARD,        // NORMAL requests only
+    DRIVER_PLUS,            // NORMAL and VIP
+    DRIVER_ELITE            // all three, preferred for EMERGENCY
 } DriverCategory;
 
 typedef struct Driver {
@@ -25,5 +25,3 @@ typedef struct Driver {
     time_t lastStatusChange;
     time_t lastAssignedTime;
 } Driver;
-
-#endif
