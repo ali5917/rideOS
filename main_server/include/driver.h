@@ -1,6 +1,7 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
+#include <pthread.h>
 #include <time.h>
 #include <stdint.h>
 

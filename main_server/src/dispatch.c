@@ -152,8 +152,6 @@ void* dispatcherThread(void* arg) {
                 perror("Failed to start the ride");
             }
             pthread_detach(rideTid);
-            
-            // TODO: Update Shared Memory State for the GUI
         } else {
             // re-insert and update the queue's deferCount
             pthread_mutex_unlock(&driverMutex);

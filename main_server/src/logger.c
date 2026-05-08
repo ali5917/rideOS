@@ -1,6 +1,5 @@
 #include "../include/logger.h"
 
-#include <stdarg.h>
 #include <string.h>
 #include <time.h>
 
@@ -44,12 +43,15 @@ void loggerLogEvent(const char *event, int requestId, const char *details) {
 	char timeBuf[32];
 	strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", &timeNow);
 
-	pthread_mutex_lock(&logger.lock);
+	char line[256];
 	if (details != NULL && details[0] != '\0') {
-		fprintf(logger.file, "%s | %s | request_id=%d | %s\n", timeBuf, event, requestId, details);
+		snprintf(line, sizeof(line), "%s | %s | request_id=%d | %s", timeBuf, event, requestId, details);
 	} else {
-		fprintf(logger.file, "%s | %s | request_id=%d\n", timeBuf, event, requestId);
+		snprintf(line, sizeof(line), "%s | %s | request_id=%d", timeBuf, event, requestId);
 	}
+
+	pthread_mutex_lock(&logger.lock);
+	fprintf(logger.file, "%s\n", line);
 	fflush(logger.file);
 	pthread_mutex_unlock(&logger.lock);
 }

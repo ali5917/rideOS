@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "../include/queue.h"
+#include "../include/config.h"
 
 // Priority: EMERGENCY (3) > VIP (2) > NORMAL (1)
 int getPriority(RequestType type) {
@@ -120,12 +120,12 @@ void updateDeferCount(PriorityQueue* pq) {
         RideRequest* req = pq->heap[i];
         req->deferredCount++;
 
-        if (req->type == NORMAL && req->deferredCount >= AGING_NORMAL_TO_VIP) {
+        if (req->type == NORMAL && req->deferredCount >= config.agingNormalToVip) {
             req->type = VIP;
             req->deferredCount = 0;
             printf("AGING --- Request #%d promoted to VIP\n", req->id);
             changed = 1;
-        } else if (req->type == VIP && req->deferredCount >= AGING_VIP_TO_EMERGENCY) {
+        } else if (req->type == VIP && req->deferredCount >= config.agingVipToEmergency) {
             req->type = EMERGENCY;
             req->deferredCount = 0;
             printf("AGING --- Request #%d promoted to EMERGENCY\n", req->id);

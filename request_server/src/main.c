@@ -5,20 +5,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// TODO: Main loop: Render UI, handle user input.
-// TODO: Close Raylib window.
-
 int main() {
-    printf("REQUEST SERVER --- Starting...\n");
+    printf("REQUEST SERVER --- Starting Dashboard Process...\n");
 
-    // initialize IPC (pipe for writing, shm for reading)
-    // assumes that the main server is running already to create the SHM
+    // 1. Initialize IPC (Assumes Main Server is already up)
     if (initSharedMemory(NULL) != 0) {
-        fprintf(stderr, "Could not connect to Shared Memory. Is Main Server running?\n");
+        fprintf(stderr, "Could not connect to Shared Memory. Is the Main Server running?\n");
         return 1;
     }
     if (initShmLock() != 0) {
-        fprintf(stderr, "Could not connect to Shm Lock.\n");
+        fprintf(stderr, "Could not connect to Shared Memory Lock.\n");
         return 1;
     }
     if (initRequestPipe() != 0) {
@@ -26,16 +22,20 @@ int main() {
         return 1;
     }
 
-    // start the automatic request generator thread
+    // 2. Start Request Generator in a background thread
     pthread_t generatorTid;
     if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) != 0) {
-        perror("Failed to start generator thread");
+        perror("Failed to launch generator thread");
         return 1;
     }
-    pthread_detach(generatorTid);
 
-    // cleanup 
+    // 3. Enter GUI Main Loop (Blocks until window closed)
+    runGui();
+
+    // 4. Cleanup on exit
     printf("REQUEST SERVER --- Shutting down...\n");
+    generatorStop();
+    pthread_join(generatorTid, NULL);
     pipeCleanup();
     shmCleanup();
     shmLockCleanup();

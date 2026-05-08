@@ -1,5 +1,6 @@
 #include "../include/ipc.h"
 #include "../include/request.h"
+#include "../include/config.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -76,7 +77,7 @@ int initShmLock(void) {
 	return 0;
 }
 
-int readPipeRequest(RideRequest *out, int timeoutSeconds) {
+int readPipeRequest(RideRequest *out) {
 	if (pipe_fd == -1 || out == NULL) {
 		return -1;
 	}
@@ -100,7 +101,7 @@ int readPipeRequest(RideRequest *out, int timeoutSeconds) {
 	out->fare = (float)pr.baseFare;
 	out->rideDuration = pr.rideDuration;
 	out->requestTime = pr.requestTime;
-	out->timeoutSeconds = timeoutSeconds;
+	out->timeoutSeconds = configGetTimeout(&config, pr.type);
 	out->deferredCount = 0;
 
 	return 0;

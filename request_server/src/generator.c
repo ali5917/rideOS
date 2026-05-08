@@ -5,13 +5,15 @@
 #include "../include/generator.h"
 #include "../include/ipc.h"
 
+static volatile int generatorRunning = 1;
+
 void* generatorLoop(void* arg) {
     int nextId = 1001; 
     srand(time(NULL));
 
     printf("GENERATOR --- Automatic request generation started.\n");
 
-    while (1) {
+    while (generatorRunning) {
         // sleep for a random interval (2-6 seconds)
         int interval = (rand() % 5) + 2;
         sleep(interval);
@@ -46,4 +48,8 @@ void* generatorLoop(void* arg) {
     }
 
     return NULL;
+}
+
+void generatorStop(void) {
+    generatorRunning = 0;
 }

@@ -13,6 +13,7 @@
 #include "../include/logger.h"
 #include "../include/metrics.h"
 #include "../include/state.h"
+#include "../include/config.h"
 
 // Define global variables
 PriorityQueue requestQueue;
@@ -33,16 +34,6 @@ void handleShutdown(int sig) {
     systemRunning = 0;
 }
 
-// Fill the SharedState for the GUI
-void updateSharedState() {
-    if (!sharedState) return;
-    
-    // In a real implementation, we'd copy the current state of drivers and queue
-    // to the sharedState struct. For now, we'll just update basic counts.
-    
-    // Note: dispatch.c and request.c should ideally call this or we do it periodically.
-}
-
 int main(int argc, char *argv[]) {
     // setting up signal handler for Ctrl + C 
     struct sigaction sa = {0};
@@ -55,6 +46,14 @@ int main(int argc, char *argv[]) {
     initializeRequestQueue(&requestQueue);
     pthread_mutex_init(&driverMutex, NULL);
     metricsInit(&metrics);
+    configInit(&config);
+    configLoadFile(&config, "config.txt");
+    configApplyArgs(&config, argc, argv);
+
+    if (config.numDrivers > MAX_DRIVERS) {
+        config.numDrivers = MAX_DRIVERS;
+    }
+    numDrivers = config.numDrivers;
 
     if (loggerInit("rideos.log") != 0) {
         fprintf(stderr, "MAIN --- Failed to initialize logger.\n");
@@ -110,7 +109,7 @@ int main(int argc, char *argv[]) {
         pthread_cond_init(&newReq->assignedCond, NULL);
 
         // readPipeRequest returns 0 on success, 1 on "no data"
-        int res = readPipeRequest(newReq, 30);      // 30s timeout
+        int res = readPipeRequest(newReq);
         
         if (res == 0) {
             printf("MAIN --- Received Ride Request #%d.\n", newReq->id);

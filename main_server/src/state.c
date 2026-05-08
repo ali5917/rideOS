@@ -8,6 +8,7 @@
 #include "../include/metrics.h"
 #include "../include/queue.h"
 #include "../include/request.h"
+#include "../include/config.h"
 
 extern PriorityQueue requestQueue;
 extern Driver driverPool[MAX_DRIVERS];
@@ -16,6 +17,7 @@ extern pthread_mutex_t driverMutex;
 extern Metrics metrics;
 extern SharedState *sharedState;
 extern volatile sig_atomic_t systemRunning;
+extern Config config;
 
 void updateSharedState(void) {
     if (sharedState == NULL) {
@@ -27,8 +29,13 @@ void updateSharedState(void) {
 
     frame.shutdownFlag = systemRunning ? 0 : 1;
     frame.config.numDrivers = numDrivers;
-    frame.config.agingNormalToVip = AGING_NORMAL_TO_VIP;
-    frame.config.agingVipToEmergency = AGING_VIP_TO_EMERGENCY;
+    frame.config.durationSec = config.durationSec;
+    frame.config.surgeThreshold = config.surgeThreshold;
+    frame.config.timeoutNormal = config.timeoutNormal;
+    frame.config.timeoutVip = config.timeoutVip;
+    frame.config.timeoutEmergency = config.timeoutEmergency;
+    frame.config.agingNormalToVip = config.agingNormalToVip;
+    frame.config.agingVipToEmergency = config.agingVipToEmergency;
 
     pthread_mutex_lock(&driverMutex);
     frame.numDrivers = numDrivers;
@@ -74,7 +81,8 @@ void updateSharedState(void) {
     }
     pthread_mutex_unlock(&requestQueue.lock);
 
-    metricsSnapshot(&metrics, &frame.metrics, numDrivers, 0, 1.0f);
+    int surgeActive = (config.surgeThreshold > 0 && frame.pendingCount > config.surgeThreshold) ? 1 : 0;
+    metricsSnapshot(&metrics, &frame.metrics, numDrivers, surgeActive, config.surgeMultiplier);
 
     writeSharedState(&frame);
 }

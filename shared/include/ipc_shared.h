@@ -5,7 +5,6 @@
 
 #include "ipc_types.h"
 
-#define MAX_LOG_HISTORY 20
 #define MAX_PENDING_VIEW 50
 #define MAX_DRIVERS 128
 
@@ -56,7 +55,6 @@ typedef struct {
     int shutdownFlag; // is shutting down
 
     int tick; // to avoid rerender
-    int logSeq; // to see recent log
 
     ConfigSnapshot config;
 
@@ -70,9 +68,6 @@ typedef struct {
     int pendingEmergency;
 
     int activeRides;
-
-    char recentLogs[MAX_LOG_HISTORY][256];
-    int logCount;
 
     MetricsSnapshot metrics;
 } SharedState;

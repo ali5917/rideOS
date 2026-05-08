@@ -7,7 +7,7 @@
 int initRequestPipe(void);
 int initSharedMemory(SharedState **state);
 int initShmLock(void);
-int readPipeRequest(RideRequest *out, int timeoutSeconds);
+int readPipeRequest(RideRequest *out);
 void writeSharedState(const SharedState *frame);
 void pipeCleanup(void);
 void shmCleanup(void);

@@ -4,5 +4,6 @@
 #include <pthread.h>
 
 void* generatorLoop(void* arg);
+void generatorStop(void);
 
 #endif
