@@ -24,7 +24,7 @@ static int canHandle(DriverCategory category, RequestType type) {
 }
 
 void* dispatcherThread(void* arg) {
-    printf("[DISPATCHER] Thread started.\n");
+    printf("DISPATCHER --- Thread started.\n");
 
     while (systemRunning) {
         // 1. Get the highest priority request (Blocks if empty)
@@ -32,7 +32,7 @@ void* dispatcherThread(void* arg) {
 
         // 2. Skip if already cancelled
         if (req->status == REQUEST_CANCELLED) {
-            printf("[DISPATCHER] Skipping cancelled Request #%d\n", req->id);
+            printf("DISPATCHER --- Skipping cancelled Request #%d\n", req->id);
             // Memory cleanup for req should be handled carefully (e.g., in main)
             continue;
         }
@@ -64,7 +64,7 @@ void* dispatcherThread(void* arg) {
             pthread_cond_signal(&req->assignedCond);
             pthread_mutex_unlock(&req->waitMutex);
 
-            printf("[DISPATCHER] Assigned Request #%d to Driver #%d (%s)\n", 
+            printf("DISPATCHER --- Assigned Request #%d to Driver #%d (%s)\n", 
                    req->id, driver->ID, (req->type == EMERGENCY ? "EMERGENCY" : (req->type == VIP ? "VIP" : "NORMAL")));
 
             // 6. Spawn the Ride Thread to handle the actual journey
@@ -87,6 +87,6 @@ void* dispatcherThread(void* arg) {
         }
     }
 
-    printf("[DISPATCHER] Thread exiting.\n");
-    return NULL;
+    printf("DISPATCHER --- Thread exiting.\n");
+    pthread_exit(0);
 }

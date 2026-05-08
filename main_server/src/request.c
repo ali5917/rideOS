@@ -34,7 +34,7 @@ void* requestThread(void* arg) {
         if (rc == ETIMEDOUT) {
             if (req->status == REQUEST_WAITING) {
                 req->status = REQUEST_CANCELLED;
-                printf("[TIMEOUT] Request #%d timed out after %ds and cancelled itself.\n", 
+                printf("TIMEOUT --- Request #%d timed out after %ds and cancelled itself.\n", 
                        req->id, req->timeoutSeconds);
             }
             break;
@@ -44,14 +44,14 @@ void* requestThread(void* arg) {
 
     // If assigned, the thread exits normally. 
     // If cancelled, it might need to notify metrics (handled by friend's logger/metrics).
-    return NULL;
+    pthread_exit(0);
 }
 
 void* rideThread(void* arg) {
     RideRequest* req = (RideRequest*)arg;
 
     // Simulate the ride
-    printf("[RIDE] Started Request #%d | Driver #%d | Duration: %ds\n", 
+    printf("RIDE --- Started Request #%d | Driver #%d | Duration: %ds\n", 
            req->id, req->assignedDriverId, req->rideDuration);
     
     sleep(req->rideDuration);
@@ -63,11 +63,11 @@ void* rideThread(void* arg) {
     pthread_mutex_unlock(&driverMutex);
 
     req->status = REQUEST_COMPLETED;
-    printf("[COMPLETED] Request #%d finished. Driver #%d is now ONLINE.\n", 
+    printf("COMPLETED --- Request #%d finished. Driver #%d is now ONLINE.\n", 
            req->id, req->assignedDriverId);
 
     // TODO: Call friend's update_metrics() and log_event() here
     // TODO: Trigger Shared Memory update via IPC
 
-    return NULL;
+    pthread_exit(0)
 }
