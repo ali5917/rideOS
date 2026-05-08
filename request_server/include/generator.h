@@ -1,6 +1,8 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
-// TODO: Declare functions for random request generation.
+#include <pthread.h>
+
+void* generatorLoop(void* arg);
 
 #endif
