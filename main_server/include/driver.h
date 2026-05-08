@@ -8,7 +8,6 @@ typedef enum {
     DRIVER_OFFLINE,
     DRIVER_ONLINE,
     DRIVER_BUSY,
-    DRIVER_GOING_OFFLINE
 } DriverStatus;
 
 typedef enum {
