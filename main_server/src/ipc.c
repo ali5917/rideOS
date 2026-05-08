@@ -36,7 +36,7 @@ int ipc_init_request_pipe(void) {
 	if (pipe_dummy_fd == -1) {
 		perror("ipc_init_request_pipe: open dummy write");
 	}
-	return pipe_fd;
+	return 0;
 }
 
 int ipc_init_shared_memory(SharedState **state) {
