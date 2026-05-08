@@ -49,13 +49,13 @@ void* requestThread(void* arg) {
 void* rideThread(void* arg) {
     RideRequest* req = (RideRequest*)arg;
 
-    // Simulate the ride
+    // simulate the ride
     printf("RIDE --- Started Request #%d | Driver #%d | Duration: %ds\n", 
            req->id, req->assignedDriverId, req->rideDuration);
     
     sleep(req->rideDuration);
 
-    // Release the driver (use assignedDriverId as pool index)
+    // release the driver
     pthread_mutex_lock(&driverMutex);
     for (int i = 0; i < numDrivers; i++) {
         if (driverPool[i].ID == req->assignedDriverId) {
