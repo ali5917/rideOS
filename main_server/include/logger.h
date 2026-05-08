@@ -1,7 +1,16 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-// TODO: Implement thread-safe file logging.
-// TODO: Ensure every log line includes a request_id.
+#include <pthread.h>
+#include <stdio.h>
+
+typedef struct {
+	FILE *file;
+	pthread_mutex_t lock;
+} Logger;
+
+int loggerInit(const char *path);
+void loggerClose(void);
+void loggerLogEvent(const char *event, int requestId, const char *details);
 
 #endif

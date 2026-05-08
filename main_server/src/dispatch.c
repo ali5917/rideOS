@@ -7,6 +7,7 @@
 #include "../include/queue.h"
 #include "../include/request.h"
 #include "../include/ipc.h"
+#include "../include/logger.h"
 
 // External globals from main.c
 extern PriorityQueue requestQueue;
@@ -91,6 +92,7 @@ void* dispatcherThread(void* arg) {
         if (req->status == REQUEST_CANCELLED) {
             pthread_mutex_unlock(&req->waitMutex);
             printf("DISPATCHER --- Skipping cancelled Request #%d\n", req->id);
+            logger_log_event("REQUEST_CANCELLED", req->id, "dispatcher_skip");
             destroyRequest(req);
             continue;
         }
@@ -124,6 +126,7 @@ void* dispatcherThread(void* arg) {
                 driver->status = DRIVER_ONLINE;
                 driver->currentRequestID = -1;
                 pthread_mutex_unlock(&driverMutex);
+                logger_log_event("REQUEST_CANCELLED", req->id, "late_cancel");
                 destroyRequest(req);
                 continue;
             }
@@ -135,6 +138,11 @@ void* dispatcherThread(void* arg) {
             pthread_mutex_unlock(&driverMutex);
 
             printf("DISPATCHER --- Assigned Request #%d to Driver #%d (%s)\n", req->id, driver->ID, getRequestTypeString(req->type));
+            {
+                char details[64];
+                snprintf(details, sizeof(details), "driver_id=%d", driver->ID);
+                logger_log_event("REQUEST_ASSIGNED", req->id, details);
+            }
 
             // spawn the ride thread to start the ride
             pthread_t rideTid;

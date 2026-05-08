@@ -10,12 +10,16 @@
 #include "../include/queue.h"
 #include "../include/request.h"
 #include "../include/ipc.h"
+#include "../include/logger.h"
+#include "../include/metrics.h"
 
 // Define global variables
 PriorityQueue requestQueue;
 Driver driverPool[MAX_DRIVERS];
 int numDrivers = 10;
 pthread_mutex_t driverMutex;
+
+Metrics metrics;
 
 SharedState *sharedState = NULL;
 
@@ -49,6 +53,11 @@ int main(int argc, char *argv[]) {
     // initialize core data structures
     initializeRequestQueue(&requestQueue);
     pthread_mutex_init(&driverMutex, NULL);
+    metrics_init(&metrics);
+
+    if (loggerInit("rideos.log") != 0) {
+        fprintf(stderr, "MAIN --- Failed to initialize logger.\n");
+    }
     
     // initialize drivers
     for (int i = 0; i < numDrivers; i++) {
@@ -99,7 +108,7 @@ int main(int argc, char *argv[]) {
         pthread_mutex_init(&newReq->waitMutex, NULL);
         pthread_cond_init(&newReq->assignedCond, NULL);
 
-        // ipc_readPipeRequest returns 0 on success, 1 on "no data"
+        // readPipeRequest returns 0 on success, 1 on "no data"
         int res = readPipeRequest(newReq, 30);      // 30s timeout
         
         if (res == 0) {
@@ -133,6 +142,9 @@ int main(int argc, char *argv[]) {
     
     destroyRequestQueue(&requestQueue);
     pthread_mutex_destroy(&driverMutex);
+
+    metrics_report(&metrics, numDrivers);
+    loggerClose();
     
     pipeCleanup();
     shmCleanup();

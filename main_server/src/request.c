@@ -7,16 +7,22 @@
 #include "../include/queue.h"
 #include "../include/driver.h"
 #include "../include/ipc.h"
+#include "../include/logger.h"
+#include "../include/metrics.h"
 
 // Global references defined in main.c
 extern PriorityQueue requestQueue;
 extern pthread_mutex_t driverMutex;
+extern Metrics metrics;
 
 void* requestThread(void* arg) {
     RideRequest* req = (RideRequest*)arg;
     
     req->requestTime = time(NULL);          // assign the current time
     req->status = REQUEST_WAITING;
+
+    metrics_record_created(&metrics, req);
+    loggerLogEvent("REQUEST_CREATED", req->id, NULL);
     
     // insert into the priority queue and signal dispatcher
     insertRequest(&requestQueue, req);
@@ -35,6 +41,8 @@ void* requestThread(void* arg) {
                 req->status = REQUEST_CANCELLED;
                 printf("TIMEOUT --- Request #%d timed out after %ds and cancelled itself.\n", 
                        req->id, req->timeoutSeconds);
+                  metrics_record_cancelled(&metrics, req);
+                  logger_log_event("REQUEST_CANCELLED", req->id, "timeout");
             }
             break;
         }
@@ -71,8 +79,8 @@ void* rideThread(void* arg) {
     printf("COMPLETED --- Request #%d finished. Driver #%d is now ONLINE.\n", 
            req->id, req->assignedDriverId);
 
-    // TODO: Call friend's update_metrics() and log_event() here
-    // TODO: Trigger Shared Memory update via IPC
+        metrics_record_completed(&metrics, req);
+        logger_log_event("REQUEST_COMPLETED", req->id, NULL);
 
     destroyRequest(req);
 

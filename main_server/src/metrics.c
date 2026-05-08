@@ -32,7 +32,7 @@ static void add_wait_bucket(Metrics *m, RequestType type, double waitSeconds) {
 	}
 }
 
-void metrics_init(Metrics *m) {
+void metricsInit(Metrics *m) {
 	if (m == NULL) {
 		return;
 	}
@@ -41,7 +41,7 @@ void metrics_init(Metrics *m) {
 	m->startTime = time(NULL);
 }
 
-void metrics_record_created(Metrics *m, const RideRequest *req) {
+void metricsRecordCreated(Metrics *m, const RideRequest *req) {
 	if (m == NULL || req == NULL) {
 		return;
 	}
@@ -50,7 +50,7 @@ void metrics_record_created(Metrics *m, const RideRequest *req) {
 	pthread_mutex_unlock(&m->lock);
 }
 
-void metrics_record_completed(Metrics *m, const RideRequest *req) {
+void metricsRecordCompleted(Metrics *m, const RideRequest *req) {
 	if (m == NULL || req == NULL) {
 		return;
 	}
@@ -63,7 +63,7 @@ void metrics_record_completed(Metrics *m, const RideRequest *req) {
 	pthread_mutex_unlock(&m->lock);
 }
 
-void metrics_record_cancelled(Metrics *m, const RideRequest *req) {
+void metricsRecordCancelled(Metrics *m, const RideRequest *req) {
 	if (m == NULL || req == NULL) {
 		return;
 	}
@@ -73,7 +73,7 @@ void metrics_record_cancelled(Metrics *m, const RideRequest *req) {
 	pthread_mutex_unlock(&m->lock);
 }
 
-void metrics_snapshot(const Metrics *m, MetricsSnapshot *out, int numDrivers, int surgeActive, float surgeMultiplier) {
+void metricsSnapshot(const Metrics *m, MetricsSnapshot *out, int numDrivers, int surgeActive, float surgeMultiplier) {
 	if (m == NULL || out == NULL) {
 		return;
 	}
