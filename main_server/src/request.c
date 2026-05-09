@@ -51,9 +51,6 @@ void* requestThread(void* arg) {
         }
     }
     pthread_mutex_unlock(&req->waitMutex);
-
-    // if assigned, the thread exits normally.
-    // if cancelled, it might need to notify metrics (handled by friend's logger/metrics).
     pthread_exit(0);
 }
 

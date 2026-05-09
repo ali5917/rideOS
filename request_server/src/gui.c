@@ -26,7 +26,8 @@ typedef enum {
     GUI_INTRO, 
     GUI_CONFIG, 
     GUI_DASHBOARD, 
-    GUI_METRICS 
+    GUI_METRICS,
+    GUI_CONTRIBUTORS 
 } GuiScreen;
 
 int numDriversGrid[10][9] = {
@@ -46,7 +47,7 @@ int numDriversGrid[10][9] = {
 int bgGrid[10][9] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 2, 2, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -70,17 +71,18 @@ static const Color C_ORANGE = {230, 145, 60, 255};
 static const Color C_TEXT = {14, 50, 68, 255};
 static const Color C_DIM = {58, 104, 124, 255};
 static const Color C_DARK = {10, 40, 55, 255};
-static const Color C_SIDE_HDR = {4, 58, 76, 255};  // dark sidebar header bg
-static const Color C_SIDE_MID = {8, 72, 96, 255};  // slightly lighter sidebar mid
-static const Color C_PANEL3 = {188, 218, 226, 255};  // darker panel variant
-static const Color C_AMBER = {230, 175, 20, 255};  // warm amber for surge
+static const Color C_SIDE_HDR = {4, 58, 76, 255};   
+static const Color C_SIDE_MID = {8, 72, 96, 255};   
+static const Color C_PANEL3 = {188, 218, 226, 255}; 
+static const Color C_AMBER = {230, 175, 20, 255};  
 
 // asset paths
-#define INTRO_PNG_PATH  "assets/bg.png"
-#define CONFIG_PNG_PATH "assets/selectDrivers.png"
+#define INTRO_PNG_PATH        "assets/bg.png"
+#define CONFIG_PNG_PATH       "assets/selectDrivers.png"
+#define CONTRIBUTORS_PNG_PATH "assets/contributors.png"
 
 // end simulation button (sidebar — fixed position from bottom)
-static const Rectangle END_BTN = { PAD, SCREEN_H - 56, SIDEBAR_W - PAD * 2, 36 };
+static const Rectangle END_BTN = {PAD, SCREEN_H - 56, SIDEBAR_W - PAD * 2, 36};
 
 // activity feed
 #define FEED_CAP 22
@@ -676,8 +678,10 @@ void runGui() {
 
     Texture2D introTex = {0};
     Texture2D configTex = {0};
+    Texture2D contribTex = {0};
     bool introLoaded = false;
     bool configLoaded = false;
+    bool contribLoaded = false;
 
     if (FileExists(INTRO_PNG_PATH)) {
         introTex = LoadTexture(INTRO_PNG_PATH);
@@ -690,6 +694,11 @@ void runGui() {
         configLoaded = true;
     } else {
         printf("GUI --- config PNG not found at '%s', using fallback.\n", CONFIG_PNG_PATH);
+    }
+
+    if (FileExists(CONTRIBUTORS_PNG_PATH)) {
+        contribTex = LoadTexture(CONTRIBUTORS_PNG_PATH);
+        contribLoaded = true;
     }
 
     GuiScreen screen = GUI_INTRO;
@@ -731,8 +740,11 @@ void runGui() {
             case GUI_INTRO:
                 if (IsKeyPressed(KEY_S))
                     screen = GUI_CONFIG;
-                if (clicked && gridValueAt(bgGrid, mouse) == 1)
-                    screen = GUI_CONFIG;
+                if (clicked) {
+                    int val = gridValueAt(bgGrid, mouse);
+                    if (val == 1) screen = GUI_CONFIG;
+                    if (val == 2) screen = GUI_CONTRIBUTORS;
+                }
                 break;
 
             case GUI_CONFIG:
@@ -856,6 +868,12 @@ void runGui() {
                 break;
             }
 
+            case GUI_CONTRIBUTORS:
+                if (clicked || IsKeyPressed(KEY_ESCAPE))
+                    screen = GUI_INTRO;
+                break;
+            }
+
             case GUI_METRICS:
                 if (IsKeyPressed(KEY_ESCAPE))
                     goto cleanup;
@@ -889,16 +907,28 @@ void runGui() {
             case GUI_METRICS:
                 drawMetricsScreen(&finalMetrics);
                 break;
+            case GUI_CONTRIBUTORS:
+                if (contribLoaded) {
+                    DrawTexturePro(contribTex,
+                        (Rectangle){ 0, 0, (float)contribTex.width, (float)contribTex.height },
+                        (Rectangle){ 0, 0, SCREEN_W, SCREEN_H },
+                        (Vector2){ 0, 0 }, 0.0f, WHITE);
+                } else {
+                    ClearBackground(C_BRAND);
+                    DrawText("CONTRIBUTORS", 100, 100, 40, RAYWHITE);
+                    DrawText("Click anywhere to go back", 100, 160, 20, C_BG);
+                }
+                break;
         }
 
         EndDrawing();
     }
-
+    
 cleanup:
     #undef START_SIM
     if (mainPid > 0) kill(mainPid, SIGINT);
     generatorStop();
     if (introLoaded)  UnloadTexture(introTex);
     if (configLoaded) UnloadTexture(configTex);
+    if (contribLoaded) UnloadTexture(contribTex);
     CloseWindow();
-}
