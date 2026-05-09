@@ -46,7 +46,7 @@ int numDriversGrid[10][9] = {
 // 10 rows, 9 columns
 int bgGrid[10][9] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 2, 2, 0},
+    {0, 0, 0, 0, 0, 2, 2, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -274,24 +274,6 @@ static void drawIntroScreen(Texture2D tex, bool loaded) {
             (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
             (Rectangle){ 0, 0, SCREEN_W, SCREEN_H },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
-    } else {
-        ClearBackground((Color){ 255, 212, 0, 255 });
-        const char *title = "RIDEOS";
-        int tw = MeasureText(title, 120);
-        DrawText(title, SCREEN_W / 2 - tw / 2 + 7, SCREEN_H / 2 - 108, 120,
-                 (Color){ 28, 28, 28, 90 });
-        DrawText(title, SCREEN_W / 2 - tw / 2,     SCREEN_H / 2 - 115, 120, WHITE);
-        const char *sub = "DETERMINISTIC DISPATCH. PRIORITIZED MOBILITY";
-        DrawText(sub,
-                 SCREEN_W / 2 - MeasureText(sub, 17) / 2,
-                 SCREEN_H / 2 + 30, 17, (Color){ 18, 55, 85, 255 });
-        const char *h1 = "Press S to Start Simulation";
-        DrawText(h1,
-                 SCREEN_W / 2 - MeasureText(h1, 15) / 2,
-                 SCREEN_H / 2 + 80, 15, (Color){ 40, 40, 50, 210 });
-        DrawText("Press S to continue",
-             SCREEN_W / 2 - MeasureText("Press S to continue", 14) / 2,
-             SCREEN_H - 55, 14, C_DIM);
     }
 }
 
@@ -302,17 +284,7 @@ static void drawConfigScreen(Texture2D tex, bool loaded) {
             (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
             (Rectangle){ 0, 0, SCREEN_W, SCREEN_H },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
-        return;
     }
-    ClearBackground((Color){ 255, 212, 0, 255 });
-    const char *hdr = "Select Fleet Size";
-    DrawText(hdr, SCREEN_W / 2 - MeasureText(hdr, 36) / 2, 210, 36, (Color){ 18, 18, 22, 255 });
-    const char *sub = "Choose the number of drivers for this simulation run";
-    DrawText(sub, SCREEN_W / 2 - MeasureText(sub, 15) / 2, 258, 15, (Color){ 40, 40, 50, 200 });
-    const char *hint = "Click a driver count to continue";
-    DrawText(hint, SCREEN_W / 2 - MeasureText(hint, 16) / 2, 430, 16, (Color){ 18, 18, 22, 255 });
-    const char *esc = "Press ESC to go back";
-    DrawText(esc, SCREEN_W / 2 - MeasureText(esc, 13) / 2, SCREEN_H - 50, 13, (Color){ 40, 40, 50, 160 });
 }
 
 static void drawMetricsScreen(const MetricsSnapshot *m) {
@@ -338,14 +310,14 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
     int cardY  = 118;
     int cardH  = 204;
 
-    // Helper: draw a section card (rounded rect + top accent + label) 
+    // draw a section card (rounded rect + top accent + label) 
     #define CARD(cx, label, accentCol) \
         DrawRectangleRounded((Rectangle){ cx, cardY, colW, cardH }, \
                              0.12f, 6, C_PANEL); \
         DrawRectangle(cx, cardY, colW, 3, accentCol); \
         secLabel(label, cx + 10, cardY + 10);
 
-    // Column 1: Overall volumes 
+    // column 1 - Overall volumes 
     CARD(col1x, "OVERALL VOLUME", C_BRAND)
     {
         int vy = cardY + 26;
@@ -370,7 +342,7 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
                               col1x + 10, vy + 12,  vfs, C_RED);
         vy += vsp;
 
-        // Cancel-rate bar
+        // cancel-rate bar
         DrawText("CANCEL RATE", col1x + 10, vy,     10, C_DIM);
         float cr = m->cancellationRate;
         Color crCol = (cr > 0.35f) ? C_RED
@@ -424,7 +396,7 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
         }
     }
 
-    // ── Column 3: Performance ─────────────────────────────────────────────────
+    // column 3 - performance 
     CARD(col3x, "PERFORMANCE", C_GREEN)
     {
         int py = cardY + 26;
@@ -461,7 +433,7 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
         DrawLine(col3x + 8, py, col3x + colW - 8, py, C_BORDER);
         py += 10;
 
-        // Surge
+        // surge
         DrawText("SURGE PRICING", col3x + 10, py, 10, C_DIM);
         if (m->surgeActive) {
             DrawRectangleRounded(
@@ -477,7 +449,7 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
 
     #undef CARD
 
-    // ── Divider + footer hint ─────────────────────────────────────────────────
+    // divider + footer hint 
     DrawLine(SCREEN_W / 2 - totalW / 2, cardY + cardH + 16, 
              SCREEN_W / 2 + totalW / 2, cardY + cardH + 16, C_BORDER);
 
@@ -651,7 +623,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     // top header bar
     DrawRectangle(SIDEBAR_W, 0, SCREEN_W - SIDEBAR_W, 36, C_DARK);
     DrawRectangle(SIDEBAR_W, 34, SCREEN_W - SIDEBAR_W, 2, C_BRAND);
-    DrawText("FLEET STATUS", mx + 4, 10, 13, (Color){ 150, 200, 215, 255 });
+    DrawText("DRIVERS FLEET STATUS", mx + 4, 10, 13, (Color){ 150, 200, 215, 255 });
     // Right-aligned live counters
     {
         const char *hdr = TextFormat("TICK %d   |   %d DRIVERS   |   %d ACTIVE", 
@@ -916,7 +888,9 @@ void runGui() {
                 if (clicked) {
                     int val = gridValueAt(bgGrid, mouse);
                     if (val == 1) screen = GUI_CONFIG;
-                    if (val == 2) screen = GUI_CONTRIBUTORS;
+                    if (val == 2) {
+                        screen = GUI_CONTRIBUTORS;
+                    }
                 }
                 break;
 
@@ -1040,9 +1014,8 @@ void runGui() {
                 }
                 break;
             }
-
             case GUI_CONTRIBUTORS:
-                if (clicked || IsKeyPressed(KEY_ESCAPE))
+                if (clicked || IsKeyPressed(KEY_B))
                     screen = GUI_INTRO;
                 break;
 
@@ -1091,11 +1064,10 @@ void runGui() {
                     DrawText("Click anywhere to go back", 100, 160, 20, C_BG);
                 }
                 break;
-        }
+            }
 
         EndDrawing();
     }
-    
 cleanup:
     #undef START_SIM
     if (mainPid > 0) kill(mainPid, SIGINT);
