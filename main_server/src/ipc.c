@@ -41,32 +41,36 @@ int initRequestPipe(void) {
 }
 
 int initSharedMemory(SharedState **state) {
-	int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
-	if (shm_fd == -1) {
-		perror("initSharedMemory: shm_open");
-		return -1;
-	}
+    shm_unlink(SHM_NAME);
+    
+    // ADDED O_TRUNC HERE to force-clear the zombie memory on macOS
+    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR | O_TRUNC, 0666);
+    if (shm_fd == -1) {
+        perror("initSharedMemory: shm_open");
+        return -1;
+    }
 
-	if (ftruncate(shm_fd, sizeof(SharedState)) == -1) {
-		perror("initSharedMemory: ftruncate");
-		close(shm_fd);
-		return -1;
-	}
+    if (ftruncate(shm_fd, sizeof(SharedState)) == -1) {
+        perror("initSharedMemory: ftruncate");
+        close(shm_fd);
+        return -1;
+    }
 
-	void *ptr = mmap(NULL, sizeof(SharedState), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-	close(shm_fd);
-	if (ptr == MAP_FAILED) {
-		perror("initSharedMemory: mmap");
-		return -1;
-	}
+    void *ptr = mmap(NULL, sizeof(SharedState), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    close(shm_fd);
+    if (ptr == MAP_FAILED) {
+        perror("initSharedMemory: mmap");
+        return -1;
+    }
 
-	shm_ptr = (SharedState *)ptr;
-	memset(shm_ptr, 0, sizeof(SharedState));
-	*state = shm_ptr;
-	return 0;
+    shm_ptr = (SharedState *)ptr;
+    memset(shm_ptr, 0, sizeof(SharedState));
+    *state = shm_ptr;
+    return 0;
 }
 
 int initShmLock(void) {
+	sem_unlink(SEM_SHM_LOCK);
 	// named semaphore
 	shm_sem = sem_open(SEM_SHM_LOCK, O_CREAT, 0666, 1);
 	if (shm_sem == SEM_FAILED) {
