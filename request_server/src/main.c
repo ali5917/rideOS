@@ -5,10 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() {
+int main(void) {
     printf("REQUEST SERVER --- Starting Dashboard Process...\n");
 
-    // 1. Initialize IPC (Assumes Main Server is already up)
+    // 1. Connect to IPC resources created by the Main Server.
+    //    Make sure the Main Server is already running before launching this.
     if (initSharedMemory(NULL) != 0) {
         fprintf(stderr, "Could not connect to Shared Memory. Is the Main Server running?\n");
         return 1;
@@ -22,20 +23,18 @@ int main() {
         return 1;
     }
 
-    // 2. Start Request Generator in a background thread
-    pthread_t generatorTid;
-    if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) != 0) {
-        perror("Failed to launch generator thread");
-        return 1;
-    }
-
-    // 3. Enter GUI Main Loop (Blocks until window closed)
+    // 2. Enter the GUI.
+    //    The GUI state machine handles:
+    //      - Intro screen
+    //      - Config / driver-count selection screen
+    //      - Starting the request generator thread (after config is chosen)
+    //      - Live dashboard
+    //      - Post-simulation metrics screen
+    //    runGui() blocks until the window is closed.
     runGui();
 
-    // 4. Cleanup on exit
+    // 3. Cleanup (generator is already stopped inside runGui before it returns)
     printf("REQUEST SERVER --- Shutting down...\n");
-    generatorStop();
-    pthread_join(generatorTid, NULL);
     pipeCleanup();
     shmCleanup();
     shmLockCleanup();
