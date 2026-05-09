@@ -78,7 +78,8 @@ void* dispatcherThread(void* arg) {
 
             pthread_mutex_unlock(&driverMutex);
 
-            printf("DISPATCHER --- Assigned Request #%d to Driver #%d (%s)\n", req->id, driver->ID, getRequestTypeString(req->type));
+            printf("DISPATCHER --- Assigned Request #%d to Driver #%d (%s)\n", 
+                req->id, driver->ID, getRequestTypeString(req->type));
             {
                 char details[64];
                 snprintf(details, sizeof(details), "driver_id=%d", driver->ID);
