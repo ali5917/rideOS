@@ -11,7 +11,7 @@
 #include "../include/ipc.h"
 #include "../include/generator.h"
 
-// ─── Layout ──────────────────────────────────────────────────────────────────
+// Layout 
 #define SCREEN_W     1280
 #define SCREEN_H      800
 #define SIDEBAR_W     295
@@ -21,10 +21,10 @@
 #define CARD_GAP        8
 #define DRIVER_COLS     6
 
-// ─── GUI states ───────────────────────────────────────────────────────────────
+// GUI states──
 typedef enum { GUI_INTRO, GUI_CONFIG, GUI_DASHBOARD, GUI_METRICS } GuiScreen;
 
-// ─── Brand palette ────────────────────────────────────────────────────────────
+// Brand palette──
 // Signature yellow from the intro screen carried through the whole app.
 static const Color C_BRAND    = {255, 212,   0, 255 }; // #FFD400 brand yellow
 static const Color C_BG       = { 13,  13,  16, 255 }; // near-black
@@ -40,11 +40,11 @@ static const Color C_TEXT     = {245, 245, 250, 255 }; // primary text
 static const Color C_DIM      = { 88,  88, 108, 255 }; // muted label
 static const Color C_DARK     = { 18,  18,  20, 255 }; // dark text on yellow
 
-// ─── Asset paths ──────────────────────────────────────────────────────────────
+// Asset paths─
 #define INTRO_PNG_PATH  "request_server/assets/intro.png"
 #define CONFIG_PNG_PATH "request_server/assets/config.png"
 
-// ─── Config screen hit areas ──────────────────────────────────────────────────
+// Config screen hit areas
 #define NUM_DRIVER_OPTIONS 4
 static const Rectangle DRIVER_OPTION_RECTS[NUM_DRIVER_OPTIONS] = {
     { 200, 350, 160, 80 },
@@ -60,7 +60,7 @@ static const Rectangle MODE_MANUAL_BTN = { 680, 470, 240, 46 };
 // End simulation button (sidebar)
 static const Rectangle END_BTN = { PAD, SCREEN_H - 146, SIDEBAR_W - PAD * 2, 36 };
 
-// ─── Activity feed ────────────────────────────────────────────────────────────
+// Activity feed──
 #define FEED_CAP 22
 typedef struct { char text[84]; Color col; float age; } FeedEntry;
 static FeedEntry feed[FEED_CAP];
@@ -75,14 +75,14 @@ static void feedPush(const char *msg, Color col) {
     feed[0].age = 0.0f;
 }
 
-// ─── Per-driver diffing ───────────────────────────────────────────────────────
+// Per-driver diffing 
 typedef struct { int status; int currentRequestId; } DriverSnap;
 static DriverSnap prevSnap[MAX_DRIVERS];
 static int        prevDriverCount = 0;
 static int        prevCancelled   = 0;
 static float      driverFlash[MAX_DRIVERS];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers 
 static Color alphaBlend(Color c, float a) {
     c.a = (unsigned char)(c.a * a);
     return c;
@@ -120,7 +120,7 @@ static void resetDashboard(void) {
     prevCancelled   = 0;
 }
 
-// ─── Intro screen ─────────────────────────────────────────────────────────────
+// Intro screen
 static void drawIntroScreen(Texture2D tex, bool loaded) {
     if (loaded) {
         // Stretch to fill window regardless of source resolution
@@ -156,7 +156,7 @@ static void drawIntroScreen(Texture2D tex, bool loaded) {
     }
 }
 
-// ─── Config screen ────────────────────────────────────────────────────────────
+// Config screen
 static void drawConfigScreen(Texture2D tex, bool loaded, int autoMode) {
     if (loaded) {
         DrawTexturePro(tex,
@@ -226,7 +226,7 @@ static void drawConfigScreen(Texture2D tex, bool loaded, int autoMode) {
              SCREEN_H - 50, 13, (Color){ 40, 40, 50, 160 });
 }
 
-// ─── Metrics screen ───────────────────────────────────────────────────────────
+// Metrics screen
 static void drawMetricsScreen(const MetricsSnapshot *m) {
     ClearBackground(C_BG);
 
@@ -288,11 +288,11 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
              SCREEN_H - 44, 14, C_DIM);
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+// Dashboard
 static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRows) {
     ClearBackground(C_BG);
 
-    // ── Sidebar ──────────────────────────────────────────────────────────────
+    // ── Sidebar─
     DrawRectangle(0, 0, SIDEBAR_W, SCREEN_H, C_SIDE);
     DrawRectangle(SIDEBAR_W - 1, 0, 1, SCREEN_H, C_BORDER);
     // 4 px brand stripe on left edge
@@ -383,9 +383,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
              PAD + 6 + (SIDEBAR_W - PAD * 2 - MeasureText(bt, 15)) / 2,
              SCREEN_H - 40, 15, C_DARK);
 
-    // ═════════════════════════════════════════════════════════════════════
     // MAIN AREA
-    // ═════════════════════════════════════════════════════════════════════
     int mx = SIDEBAR_W + PAD;
     int mw = SCREEN_W - SIDEBAR_W - PAD * 2;
 
@@ -393,7 +391,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     DrawRectangle(mx, 0, mw + PAD, 28, C_BRAND);
     DrawText("FLEET STATUS", mx + 8, 7, 13, C_DARK);
 
-    // ── Driver grid ───────────────────────────────────────────────────────
+    // Driver grid 
     int gridTop = 36;
     for (int i = 0; i < s->numDrivers; i++) {
         int col = i % DRIVER_COLS;
@@ -444,7 +442,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     DrawRectanglePro((Rectangle){ dmx, divY, 8, 8 },
                      (Vector2){ 4, 4 }, 45.0f, C_BRAND);
 
-    // ── Bottom split: queue | feed ────────────────────────────────────────
+    // Bottom split: queue | feed
     int botY = divY + PAD;
     int botH = SCREEN_H - botY - PAD;
     int qW   = mw / 2 - PAD / 2;
@@ -516,7 +514,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     }
 }
 
-// ─── Main loop ────────────────────────────────────────────────────────────────
+// Main loop
 void runGui(void) {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(SCREEN_W, SCREEN_H, "RideOS | Dispatch Dashboard");
@@ -556,19 +554,19 @@ void runGui(void) {
     resetDashboard();
 
     // Macro: launch generator and jump to dashboard
-    #define START_SIM() do {                                                     \
-        if (!generatorStarted) {                                                  \
-            if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) == 0) { \
-                generatorStarted = true;                                          \
-                pthread_detach(generatorTid);                                     \
-                printf("GUI --- Generator started (%d drivers).\n",              \
-                       selectedDrivers);                                           \
-            } else {                                                              \
-                perror("GUI --- Failed to start generator thread");               \
-            }                                                                     \
-        }                                                                         \
-        resetDashboard();                                                         \
-        screen = GUI_DASHBOARD;                                                   \
+    #define START_SIM() do {                                                     
+        if (!generatorStarted) {                                                  
+            if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) == 0) { 
+                generatorStarted = true;                                          
+                pthread_detach(generatorTid);                                     
+                printf("GUI --- Generator started (%d drivers).\n",              
+                       selectedDrivers);                                           
+            } else {                                                              
+                perror("GUI --- Failed to start generator thread");               
+            }                                                                     
+        }                                                                         
+        resetDashboard();                                                         
+        screen = GUI_DASHBOARD;                                                   
     } while (0)
 
     while (!WindowShouldClose()) {
