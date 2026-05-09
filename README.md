@@ -103,11 +103,15 @@ To ensure IPC channels are correctly initialized, follow this exact order:
    Press `S` or the Start button, then select your driver count to begin the simulation.
 
 ## User Interface Controls
-
-| Key | Function |
-| :--- | :--- |
-| **R** | Submit a manual request into the IPC pipe |
-| **TAB** | Cycle through request priority levels (Normal, VIP, Emergency) |
-| **E** | Trigger simulation termination and generate metrics report |
-| **ESC** | Graceful shutdown and resource cleanup |
-| **Ctrl-C** | Signal-based graceful shutdown (see Signal Handling above) |
+ 
+| Screen | Key | Function |
+| :--- | :--- | :--- |
+| Intro | **S** | Begin — proceed to Contributors screen |
+| Contributors | **B** | Return to Intro screen |
+| Config | **M** | Switch to manual requests mode only |
+| Dashboard | **R** | Submit a manual ride request into the IPC pipe |
+| Dashboard | **TAB** | Cycle request priority (Normal → VIP → Emergency) |
+| Dashboard | **E** | End simulation and generate metrics report |
+| Global | **ESC** | Graceful shutdown and resource cleanup |
+| Global | **Ctrl-C** | Signal-based graceful shutdown (see Signal Handling above) |
+ 
