@@ -1,6 +1,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "../include/state.h"
 #include "../include/driver.h"
@@ -28,6 +29,7 @@ void updateSharedState(void) {
     memset(&frame, 0, sizeof(frame));
 
     frame.shutdownFlag = systemRunning ? 0 : 1;
+    frame.mainPid = (int)getpid();
     frame.config.numDrivers = numDrivers;
     frame.config.durationSec = config.durationSec;
     frame.config.surgeThreshold = config.surgeThreshold;

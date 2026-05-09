@@ -9,12 +9,19 @@
 #define MAX_PENDING_VIEW 50
 
 // for req sever to main server
+typedef enum {
+    PIPE_MSG_REQUEST = 0,
+    PIPE_MSG_CONFIG  = 1
+} PipeMessageType;
+
 typedef struct {
+    PipeMessageType msgType;
     int id;
     RequestType type;
     int rideDuration;
     time_t requestTime;
     int baseFare;
+    int configDrivers;
 } PipeRequest;
 
 typedef struct {
@@ -53,6 +60,8 @@ typedef struct {
 // from main server to request server, for interface
 typedef struct {
     int shutdownFlag; // is shutting down
+
+    int mainPid; // pid of main server
 
     int tick; // to avoid rerender
 

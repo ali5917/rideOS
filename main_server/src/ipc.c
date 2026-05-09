@@ -81,7 +81,7 @@ int initShmLock(void) {
 	return 0;
 }
 
-int readPipeRequest(RideRequest *out) {
+int readPipeRequest(PipeRequest *out) {
 	if (pipe_fd == -1 || out == NULL) {
 		return -1;
 	}
@@ -96,18 +96,7 @@ int readPipeRequest(RideRequest *out) {
 		return -1;
 	}
 
-	memset(out, 0, sizeof(RideRequest));
-	out->id = pr.id;
-	out->type = pr.type;
-	out->originalType = pr.type;
-	out->status = REQUEST_WAITING;
-	out->assignedDriverId = -1;
-	out->fare = (float)pr.baseFare;
-	out->rideDuration = pr.rideDuration;
-	out->requestTime = pr.requestTime;
-	out->timeoutSeconds = configGetTimeout(&config, pr.type);
-	out->deferredCount = 0;
-
+	*out = pr;
 	return 0;
 }
 
