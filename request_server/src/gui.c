@@ -118,6 +118,40 @@ static int prevDriverCount = 0;
 static int prevCancelled   = 0;
 static float driverFlash[MAX_DRIVERS];
 
+// driver names mapping
+static char driverNames[MAX_DRIVERS][32];
+static bool namesLoaded = false;
+
+static void loadDriverNames(void) {
+    FILE *f = fopen("request_server/assets/drivers.txt", "r");
+    if (!f) {
+        for (int i = 0; i < MAX_DRIVERS; i++) {
+            snprintf(driverNames[i], 32, "Driver #%d", i + 1);
+        }
+        return;
+    }
+    char line[64];
+    int count = 0;
+    while (fgets(line, sizeof(line), f) && count < MAX_DRIVERS) {
+        line[strcspn(line, "\r\n")] = 0; // trim newline
+        if (strlen(line) > 0) {
+            strncpy(driverNames[count], line, 31);
+            driverNames[count][31] = '\0';
+            count++;
+        }
+    }
+    fclose(f);
+    for (int i = count; i < MAX_DRIVERS; i++) {
+        snprintf(driverNames[i], 32, "Driver #%d", i + 1);
+    }
+    namesLoaded = true;
+}
+
+static const char* getDriverName(int id) {
+    if (id < 1 || id > MAX_DRIVERS) return "Unknown";
+    return driverNames[id - 1];
+}
+
 // Helpers 
 
 static Color alphaBlend(Color c, float a) {
@@ -515,8 +549,9 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
         // status indicator dot (top-right)
         DrawCircle(cx + CARD_W - 11, cy + 12, 5, busy ? C_RED : C_GREEN);
 
-        // driver iD
-        DrawText(TextFormat("#%02d", s->drivers[i].id), cx + 10, cy + 7, 18, C_DARK);
+        // driver name (or ID if not found)
+        const char *dname = getDriverName(s->drivers[i].id);
+        DrawText(dname, cx + 10, cy + 7, 16, C_DARK);
 
         // category badge
         if (isPlus) {
@@ -701,6 +736,8 @@ void runGui() {
         contribLoaded = true;
     }
 
+    loadDriverNames();
+
     GuiScreen screen = GUI_INTRO;
     int selectedDrivers = 10;
     int nextManualId = 9000;
@@ -806,13 +843,13 @@ void runGui() {
                         if (!wasBusy && isBusy) {
                             const char *cat = (state.drivers[i].category == DRIVER_PLUS) ? "PLUS" : "STD";
                             char buf[84];
-                            snprintf(buf, sizeof(buf), "Driver #%d (%s) -> Req #%d", 
-                                    state.drivers[i].id, cat, state.drivers[i].currentRequestId);
+                            snprintf(buf, sizeof(buf), "%s (%s) -> Req #%d", 
+                                    getDriverName(state.drivers[i].id), cat, state.drivers[i].currentRequestId);
                             feedPush(buf, C_GREEN);
                             driverFlash[i] = 1.0f;
                         } else if (wasBusy && !isBusy) {
                             char buf[84];
-                            snprintf(buf, sizeof(buf), "Driver #%d completed ride", state.drivers[i].id);
+                            snprintf(buf, sizeof(buf), "%s completed ride", getDriverName(state.drivers[i].id));
                             feedPush(buf, C_BLUE);
                             driverFlash[i] = 0.6f;
                         }
