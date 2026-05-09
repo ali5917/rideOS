@@ -46,8 +46,8 @@ int numDriversGrid[10][9] = {
 // 10 rows, 9 columns
 int bgGrid[10][9] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 2, 2, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -318,7 +318,7 @@ static void drawConfigScreen(Texture2D tex, bool loaded) {
 static void drawMetricsScreen(const MetricsSnapshot *m) {
     ClearBackground(C_BG);
 
-    // ── Header band ──────────────────────────────────────────────────────────
+    // header band 
     DrawRectangle(0, 0, SCREEN_W, 72, C_DARK);
     DrawRectangle(0, 70, SCREEN_W, 3, C_BRAND);
 
@@ -327,8 +327,8 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
     const char *sub = "Final Performance Report";
     DrawText(sub, SCREEN_W / 2 - MeasureText(sub, 13) / 2, 90, 13, C_DIM);
 
-    // ── Layout constants ─────────────────────────────────────────────────────
-    // Three equal columns centred on screen
+    // layout constants 
+    // three equal columns centred on screen
     int totalW = 860;
     int gap = 20;
     int colW   = (totalW - gap * 2) / 3; 
@@ -338,14 +338,14 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
     int cardY  = 118;
     int cardH  = 204;
 
-    // ── Helper: draw a section card (rounded rect + top accent + label) ──────
+    // Helper: draw a section card (rounded rect + top accent + label) 
     #define CARD(cx, label, accentCol) \
         DrawRectangleRounded((Rectangle){ cx, cardY, colW, cardH }, \
                              0.12f, 6, C_PANEL); \
         DrawRectangle(cx, cardY, colW, 3, accentCol); \
         secLabel(label, cx + 10, cardY + 10);
 
-    // ── Column 1: Overall volumes ─────────────────────────────────────────────
+    // Column 1: Overall volumes 
     CARD(col1x, "OVERALL VOLUME", C_BRAND)
     {
         int vy = cardY + 26;
@@ -382,7 +382,7 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
         DrawRectangle(col1x + 10, vy + 34, (int)(bw * cr), 4, crCol);
     }
 
-    // ── Column 2: Per-type breakdown ──────────────────────────────────────────
+    // Column 2: Per-type breakdown
     CARD(col2x, "REQUEST BREAKDOWN", C_BLUE)
     {
         // Three sub-rows: NORMAL / VIP / EMERGENCY
@@ -478,13 +478,11 @@ static void drawMetricsScreen(const MetricsSnapshot *m) {
     #undef CARD
 
     // ── Divider + footer hint ─────────────────────────────────────────────────
-    DrawLine(SCREEN_W / 2 - totalW / 2, cardY + cardH + 16,
+    DrawLine(SCREEN_W / 2 - totalW / 2, cardY + cardH + 16, 
              SCREEN_W / 2 + totalW / 2, cardY + cardH + 16, C_BORDER);
 
     const char *hint = "Press ESC or close the window to exit";
-    DrawText(hint,
-             SCREEN_W / 2 - MeasureText(hint, 13) / 2,
-             SCREEN_H - 40, 13, C_DIM);
+    DrawText(hint,SCREEN_W / 2 - MeasureText(hint, 13) / 2, SCREEN_H - 40, 13, C_DIM);
 }
 
 // dashboard 
