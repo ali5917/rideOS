@@ -55,6 +55,8 @@ Sending `SIGINT` (Ctrl-C) causes the Main Server to set a `shutdownFlag` in shar
 
 ## Visual Interface
 
+A full walkthrough of the system in action: [▶ Watch Demo](demo/demo.mp4)
+
 ### 1. Intro Screen
 The landing interface featuring the deterministic dispatch wordmark and entry button.
 ![Intro Screen](screenshots/intro.png)
@@ -103,7 +105,7 @@ To ensure IPC channels are correctly initialized, follow this exact order:
    Press `S` or the Start button, then select your driver count to begin the simulation.
 
 ## User Interface Controls
- 
+
 | Screen | Key | Function |
 | :--- | :--- | :--- |
 | Intro | **S** | Begin — proceed to Contributors screen |
@@ -114,4 +116,3 @@ To ensure IPC channels are correctly initialized, follow this exact order:
 | Dashboard | **E** | End simulation and generate metrics report |
 | Global | **ESC** | Graceful shutdown and resource cleanup |
 | Global | **Ctrl-C** | Signal-based graceful shutdown (see Signal Handling above) |
- 
