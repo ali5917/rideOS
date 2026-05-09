@@ -18,15 +18,15 @@ static void addWaitBucket(Metrics *m, RequestType type, double waitSeconds) {
 	switch (type) {
 		case NORMAL:
 			m->totalWaitNormal += waitSeconds;
-			m->countNormal     += 1;
+			m->countNormal += 1;
 			break;
 		case VIP:
 			m->totalWaitVip += waitSeconds;
-			m->countVip     += 1;
+			m->countVip += 1;
 			break;
 		case EMERGENCY:
 			m->totalWaitEmergency += waitSeconds;
-			m->countEmergency     += 1;
+			m->countEmergency += 1;
 			break;
 		default:
 			break;
