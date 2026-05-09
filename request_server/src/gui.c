@@ -554,17 +554,17 @@ void runGui(void) {
     resetDashboard();
 
     // Macro: launch generator and jump to dashboard
-    #define START_SIM() do {                                                     
-        if (!generatorStarted) {                                                  
-            if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) == 0) { 
-                generatorStarted = true;                                          
-                pthread_detach(generatorTid);                                     
-                printf("GUI --- Generator started (%d drivers).\n",              
-                       selectedDrivers);                                           
-            } else {                                                              
-                perror("GUI --- Failed to start generator thread");               
-            }                                                                     
-        }                                                                         
+    #define START_SIM() do {                                                     \
+        if (!generatorStarted) {                                                  \
+            if (pthread_create(&generatorTid, NULL, generatorLoop, NULL) == 0) { \
+                generatorStarted = true;                                          \
+                pthread_detach(generatorTid);                                     \
+                printf("GUI --- Generator started (%d drivers).\n",              \
+                       selectedDrivers);                                           \
+            } else {                                                              \
+                perror("GUI --- Failed to start generator thread");               \
+            }                                                                     \
+        }                                                                         \
         resetDashboard();                                                         
         screen = GUI_DASHBOARD;                                                   
     } while (0)
