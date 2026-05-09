@@ -20,6 +20,7 @@ void* generatorLoop(void* arg) {
 
         // create a new random request
         PipeRequest req;
+        req.msgType = PIPE_MSG_REQUEST;
         req.id = nextId++;
         
         // 60% normal, 30% vip, 10% emergency
@@ -37,6 +38,7 @@ void* generatorLoop(void* arg) {
         else req.baseFare = 15;
 
         // send via pipe
+        req.configDrivers = 0;
         if (writePipeRequest(&req) == 0) {
             printf("GENERATOR --- Sent Request #%d (Type: %s, Duration: %ds)\n", 
                    req.id, 
