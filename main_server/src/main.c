@@ -64,9 +64,8 @@ int main(int argc, char *argv[]) {
         driverPool[i].ID = i + 1;
         driverPool[i].status = DRIVER_ONLINE;
         
-        // assign categories
-        if (i % 3 == 0) driverPool[i].category = DRIVER_ELITE;
-        else if (i % 3 == 1) driverPool[i].category = DRIVER_PLUS;
+        // assign categories (PLUS is a smaller subset)
+        if (i % 3 == 0) driverPool[i].category = DRIVER_PLUS;
         else driverPool[i].category = DRIVER_STANDARD;
         
         driverPool[i].currentRequestID = -1;
@@ -99,21 +98,58 @@ int main(int argc, char *argv[]) {
 
     // main loop - read from pipe and spawn request threads
     while (systemRunning) {
-        RideRequest *newReq = malloc(sizeof(RideRequest));
-        if (!newReq) {
-            perror("MAIN --- Failed to allocate memory for request");
-            continue;
-        }
-
-        pthread_mutex_init(&newReq->waitMutex, NULL);
-        pthread_cond_init(&newReq->assignedCond, NULL);
-
+        PipeRequest msg = {0};
         // readPipeRequest returns 0 on success, 1 on "no data"
-        int res = readPipeRequest(newReq);
-        
+        int res = readPipeRequest(&msg);
+
         if (res == 0) {
+            if (msg.msgType == PIPE_MSG_CONFIG) {
+                int desired = msg.configDrivers;
+                if (desired > MAX_DRIVERS) desired = MAX_DRIVERS;
+                if (desired < 1) desired = 1;
+
+                pthread_mutex_lock(&driverMutex);
+                config.numDrivers = desired;
+                numDrivers = desired;
+                for (int i = 0; i < numDrivers; i++) {
+                    driverPool[i].ID = i + 1;
+                    driverPool[i].status = DRIVER_ONLINE;
+                    driverPool[i].category = (i % 3 == 0) ? DRIVER_PLUS : DRIVER_STANDARD;
+                    driverPool[i].currentRequestID = -1;
+                    driverPool[i].ridesCompleted = 0;
+                    driverPool[i].lastStatusChange = time(NULL);
+                }
+                pthread_mutex_unlock(&driverMutex);
+
+                printf("MAIN --- Updated driver count: %d\n", numDrivers);
+                updateSharedState();
+                usleep(100000);
+                continue;
+            }
+
+            RideRequest *newReq = malloc(sizeof(RideRequest));
+            if (!newReq) {
+                perror("MAIN --- Failed to allocate memory for request");
+                continue;
+            }
+
+            pthread_mutex_init(&newReq->waitMutex, NULL);
+            pthread_cond_init(&newReq->assignedCond, NULL);
+
+            memset(newReq, 0, sizeof(RideRequest));
+            newReq->id = msg.id;
+            newReq->type = msg.type;
+            newReq->originalType = msg.type;
+            newReq->status = REQUEST_WAITING;
+            newReq->assignedDriverId = -1;
+            newReq->fare = (float)msg.baseFare;
+            newReq->rideDuration = msg.rideDuration;
+            newReq->requestTime = msg.requestTime;
+            newReq->timeoutSeconds = configGetTimeout(&config, msg.type);
+            newReq->deferredCount = 0;
+
             printf("MAIN --- Received Ride Request #%d.\n", newReq->id);
-            
+
             pthread_t reqTid;
             if (pthread_create(&reqTid, NULL, requestThread, (void*)newReq) != 0) {
                 perror("MAIN --- Failed to spawn request thread");
@@ -122,12 +158,8 @@ int main(int argc, char *argv[]) {
                 pthread_detach(reqTid);
             }
         } else if (res == 1) {
-            // no requests in pipe
-            free(newReq);
-            usleep(100000); 
+            usleep(100000);
         } else {
-            // error reading pipe
-            free(newReq);
             if (systemRunning) {
                 fprintf(stderr, "MAIN --- Pipe error, retrying.\n");
                 sleep(1);
