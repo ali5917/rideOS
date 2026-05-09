@@ -87,6 +87,9 @@ static const Color C_BLUE_TEXT   = {22,  88, 152, 255}; // normal text
 // end simulation button (sidebar — fixed position from bottom)
 static const Rectangle END_BTN = {PAD, SCREEN_H - 56, SIDEBAR_W - PAD * 2, 36};
 
+volatile sig_atomic_t g_knownMainPid = -1;
+volatile sig_atomic_t g_sigintReceived = 0;
+
 // activity feed
 #define FEED_CAP 22
 typedef struct { 
@@ -877,6 +880,7 @@ void runGui() {
     } while (0)
 
     while (!WindowShouldClose()) {
+        if (g_sigintReceived) goto cleanup;
         float dt = GetFrameTime();
         Vector2 mouse = GetMousePosition();
         bool clicked = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
@@ -931,7 +935,10 @@ void runGui() {
                 // check shutdown flag from main server
                 SharedState tmp;
                 if (readSharedState(&tmp) == 0 && tmp.shutdownFlag && !simulationEnded) {
-                    if (tmp.mainPid > 0) mainPid = tmp.mainPid;
+                    if (tmp.mainPid > 0) {
+                        mainPid = tmp.mainPid;
+                        g_knownMainPid = tmp.mainPid;
+                    }
                     simulationEnded = true;
                     finalMetrics = tmp.metrics;
                     generatorStop();
@@ -941,7 +948,10 @@ void runGui() {
 
                 // state diffing → feed events
                 if (readSharedState(&state) == 0) {
-                    if (state.mainPid > 0) mainPid = state.mainPid;
+                    if (state.mainPid > 0) {
+                        mainPid = state.mainPid;
+                        g_knownMainPid = tmp.mainPid;
+                    }
                     for (int i = prevDriverCount; i < state.numDrivers; i++) {
                         prevSnap[i].status           = DRIVER_ONLINE;
                         prevSnap[i].currentRequestId = -1;

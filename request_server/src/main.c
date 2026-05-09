@@ -4,8 +4,24 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+
+static void sigintHandler(int sig) {
+    (void)sig;
+    g_sigintReceived = 1;
+}
 
 int main(void) {
+    struct sigaction sa = {0};
+    sa.sa_handler = sigintHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESETHAND;
+
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        perror("sigaction");
+        return 1;
+    }
+
     printf("REQUEST SERVER --- Starting Dashboard Process...\n");
 
     // connect to IPC resources created by the main server.
