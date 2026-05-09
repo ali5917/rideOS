@@ -1039,6 +1039,7 @@ void runGui() {
                     screen = GUI_METRICS;
                 }
                 break;
+            }
 
             case GUI_CONTRIBUTORS:
                 if (clicked || IsKeyPressed(KEY_ESCAPE))
@@ -1103,3 +1104,4 @@ cleanup:
     if (configLoaded) UnloadTexture(configTex);
     if (contribLoaded) UnloadTexture(contribTex);
     CloseWindow();
+}
