@@ -1,14 +1,16 @@
 #include "../include/metrics.h"
 
-// TODO: Implement metrics accumulation (total requests, completed, cancelled).
-// TODO: Implement avg wait time calculation bucketed by original_type.
-// TODO: Implement metrics_report function for human-readable summary.
 #include <stdio.h>
 #include <string.h>
 
 static double getWaitSeconds(const RideRequest *req) {
 	if (req == NULL || req->requestTime == 0) {
 		return 0.0;
+	}
+	if (req->status == REQUEST_COMPLETED || req->status == REQUEST_ASSIGNED) {
+		if (req->assignedTime > 0) {
+			return difftime(req->assignedTime, req->requestTime);
+		}
 	}
 	return difftime(time(NULL), req->requestTime);
 }

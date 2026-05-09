@@ -15,6 +15,7 @@ typedef struct {
     float fare;
     int rideDuration;
     time_t requestTime;         // time at request creation
+    time_t assignedTime;        // time when driver was assigned
     int timeoutSeconds;         // patience time of request (before it cancels itself)            
     int deferredCount;          // to prevent starvation
 

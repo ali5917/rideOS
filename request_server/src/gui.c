@@ -12,19 +12,24 @@
 #include "../include/generator.h"
 
 // Layout 
-#define SCREEN_W     1280
-#define SCREEN_H      800
-#define SIDEBAR_W     295
-#define PAD            16
-#define CARD_W        148
-#define CARD_H         78
-#define CARD_GAP        8
-#define DRIVER_COLS     6
+#define SCREEN_W 1280
+#define SCREEN_H  800
+#define SIDEBAR_W 295
+#define PAD 16
+#define CARD_W 148
+#define CARD_H 78
+#define CARD_GAP 8
+#define DRIVER_COLS 6
 
-// GUI states──
-typedef enum { GUI_INTRO, GUI_CONFIG, GUI_DASHBOARD, GUI_METRICS } GuiScreen;
+// GUI states
+typedef enum { 
+    GUI_INTRO, 
+    GUI_CONFIG, 
+    GUI_DASHBOARD, 
+    GUI_METRICS 
+} GuiScreen;
 
-// Brand palette──
+// Brand palette
 // Signature yellow from the intro screen carried through the whole app.
 static const Color C_BRAND    = {255, 212,   0, 255 }; // #FFD400 brand yellow
 static const Color C_BG       = { 13,  13,  16, 255 }; // near-black
@@ -40,17 +45,17 @@ static const Color C_TEXT     = {245, 245, 250, 255 }; // primary text
 static const Color C_DIM      = { 88,  88, 108, 255 }; // muted label
 static const Color C_DARK     = { 18,  18,  20, 255 }; // dark text on yellow
 
-// Asset paths─
+// Asset paths
 #define INTRO_PNG_PATH  "request_server/assets/intro.png"
 #define CONFIG_PNG_PATH "request_server/assets/config.png"
 
 // Config screen hit areas
 #define NUM_DRIVER_OPTIONS 4
 static const Rectangle DRIVER_OPTION_RECTS[NUM_DRIVER_OPTIONS] = {
-    { 200, 350, 160, 80 },
-    { 420, 350, 160, 80 },
-    { 640, 350, 160, 80 },
-    { 860, 350, 160, 80 },
+    {200, 350, 160, 80},
+    {420, 350, 160, 80},
+    {640, 350, 160, 80},
+    {860, 350, 160, 80},
 };
 static const int DRIVER_OPTION_VALUES[NUM_DRIVER_OPTIONS] = { 5, 10, 15, 20 };
 
@@ -60,7 +65,7 @@ static const Rectangle MODE_MANUAL_BTN = { 680, 470, 240, 46 };
 // End simulation button (sidebar)
 static const Rectangle END_BTN = { PAD, SCREEN_H - 146, SIDEBAR_W - PAD * 2, 36 };
 
-// Activity feed──
+// Activity feed
 #define FEED_CAP 22
 typedef struct { char text[84]; Color col; float age; } FeedEntry;
 static FeedEntry feed[FEED_CAP];

@@ -58,6 +58,7 @@ void* dispatcherThread(void* arg) {
             driver->status = DRIVER_BUSY;
             driver->currentRequestID = req->id;
             driver->lastAssignedTime = time(NULL);
+            req->assignedTime = time(NULL);
 
             // update request status
             pthread_mutex_lock(&req->waitMutex);
