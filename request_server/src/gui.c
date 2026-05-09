@@ -1039,13 +1039,11 @@ void runGui() {
                     screen = GUI_METRICS;
                 }
                 break;
-            }
 
             case GUI_CONTRIBUTORS:
                 if (clicked || IsKeyPressed(KEY_ESCAPE))
                     screen = GUI_INTRO;
                 break;
-            }
 
             case GUI_METRICS:
                 if (IsKeyPressed(KEY_ESCAPE))
