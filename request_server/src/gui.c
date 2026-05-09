@@ -69,12 +69,15 @@ static const Color C_RED = {220, 70, 60, 255};
 static const Color C_BLUE = {40, 120, 190, 255};
 static const Color C_ORANGE = {230, 145, 60, 255};
 static const Color C_TEXT = {14, 50, 68, 255};
-static const Color C_DIM = {58, 104, 124, 255};
+static const Color C_DIM = {38, 82, 100, 255};
 static const Color C_DARK = {10, 40, 55, 255};
 static const Color C_SIDE_HDR = {4, 58, 76, 255};   
 static const Color C_SIDE_MID = {8, 72, 96, 255};   
 static const Color C_PANEL3 = {188, 218, 226, 255}; 
 static const Color C_AMBER = {230, 175, 20, 255};  
+static const Color C_RED_TEXT    = {170, 28, 18, 255};  // emergency text
+static const Color C_BRAND_TEXT  = {4,   65, 88, 255};  // VIP text
+static const Color C_BLUE_TEXT   = {22,  88, 152, 255}; // normal text
 
 // asset paths
 #define INTRO_PNG_PATH        "assets/bg.png"
@@ -278,41 +281,176 @@ static void drawConfigScreen(Texture2D tex, bool loaded) {
     DrawText(esc, SCREEN_W / 2 - MeasureText(esc, 13) / 2, SCREEN_H - 50, 13, (Color){ 40, 40, 50, 160 });
 }
 
-// metrics screen 
 static void drawMetricsScreen(const MetricsSnapshot *m) {
     ClearBackground(C_BG);
-    DrawRectangle(0, 0, SCREEN_W, 80, C_BRAND);
+
+    // ── Header band ──────────────────────────────────────────────────────────
+    DrawRectangle(0, 0, SCREEN_W, 72, C_DARK);
+    DrawRectangle(0, 70, SCREEN_W, 3, C_BRAND);
+
     const char *banner = "SIMULATION COMPLETE";
-    DrawText(banner, SCREEN_W/2 - MeasureText(banner, 34)/2, 24, 34, C_DARK);
+    DrawText(banner, SCREEN_W / 2 - MeasureText(banner, 30) / 2, 20, 30, RAYWHITE);
     const char *sub = "Final Performance Report";
-    DrawText(sub, SCREEN_W/2 - MeasureText(sub, 15)/2, 96, 15, C_DIM);
+    DrawText(sub, SCREEN_W / 2 - MeasureText(sub, 13) / 2, 90, 13, C_DIM);
 
-    int lx = SCREEN_W/2 - 310;
-    int rx = SCREEN_W/2 +  70;
-    int y  = 150;
-    int sp = 46;
-    int fs = 20;
+    // ── Layout constants ─────────────────────────────────────────────────────
+    // Three equal columns centred on screen
+    int totalW = 860;
+    int gap = 20;
+    int colW   = (totalW - gap * 2) / 3; 
+    int col1x  = SCREEN_W / 2 - totalW / 2;
+    int col2x  = col1x + colW + 16;
+    int col3x  = col2x + colW + 16;
+    int cardY  = 118;
+    int cardH  = 204;
 
-    #define STAT(label, value, col) \
-        DrawText(label, lx, y, fs, C_DIM); \
-        DrawText(value, rx, y, fs, col);   \
-        y += sp;
+    // ── Helper: draw a section card (rounded rect + top accent + label) ──────
+    #define CARD(cx, label, accentCol) \
+        DrawRectangleRounded((Rectangle){ cx, cardY, colW, cardH }, \
+                             0.12f, 6, C_PANEL); \
+        DrawRectangle(cx, cardY, colW, 3, accentCol); \
+        secLabel(label, cx + 10, cardY + 10);
 
-    STAT("Total Requests Created:", TextFormat("%d", m->totalCreated), C_TEXT)
-    STAT("Completed:", TextFormat("%d", m->totalCompleted), C_GREEN)
-    STAT("Cancelled:", TextFormat("%d", m->totalCancelled), C_RED)
-    STAT("Cancellation Rate:", TextFormat("%.1f%%",m->cancellationRate * 100.0f), C_BRAND)
-    DrawLine(lx, y, rx + 180, y, C_BORDER); y += 14;
-    STAT("Avg Wait (Normal):", TextFormat("%.1f s",m->avgWaitNormal), C_TEXT)
-    STAT("Avg Wait (VIP):", TextFormat("%.1f s",m->avgWaitVip), C_TEXT)
-    STAT("Avg Wait (Emergency):", TextFormat("%.1f s",m->avgWaitEmergency), C_TEXT)
-    DrawLine(lx, y, rx + 180, y, C_BORDER); y += 14;
-    STAT("Driver Utilization:", TextFormat("%.1f%%",m->driverUtilization * 100.0f), C_BRAND)
-    STAT("Surge Triggered:", m->surgeActive ? "YES" : "NO", m->surgeActive ? C_RED : C_GREEN)
-    #undef STAT
+    // ── Column 1: Overall volumes ─────────────────────────────────────────────
+    CARD(col1x, "OVERALL VOLUME", C_BRAND)
+    {
+        int vy = cardY + 26;
+        int vsp = 34;
+        int vfs = 22;
+
+        DrawText("CREATED",    col1x + 10, vy,      10, C_DIM);
+        DrawText(TextFormat("%d", m->totalCreated),
+                              col1x + 10, vy + 12,  vfs, C_TEXT);
+        vy += vsp;
+
+        DrawLine(col1x + 8, vy + 2, col1x + colW - 8, vy + 2, C_BORDER);
+        vy += 10;
+
+        DrawText("COMPLETED",  col1x + 10, vy,      10, C_DIM);
+        DrawText(TextFormat("%d", m->totalCompleted),
+                              col1x + 10, vy + 12,  vfs, C_GREEN);
+        vy += vsp;
+
+        DrawText("CANCELLED",  col1x + 10, vy,      10, C_DIM);
+        DrawText(TextFormat("%d", m->totalCancelled),
+                              col1x + 10, vy + 12,  vfs, C_RED);
+        vy += vsp;
+
+        // Cancel-rate bar
+        DrawText("CANCEL RATE", col1x + 10, vy,     10, C_DIM);
+        float cr = m->cancellationRate;
+        Color crCol = (cr > 0.35f) ? C_RED
+                    : (cr > 0.15f) ? C_ORANGE : C_GREEN;
+        DrawText(TextFormat("%.1f%%", cr * 100.0f),
+                              col1x + 10, vy + 12, 18, crCol);
+        int bw = colW - 20;
+        DrawRectangle(col1x + 10, vy + 34, bw, 4, C_BORDER);
+        DrawRectangle(col1x + 10, vy + 34, (int)(bw * cr), 4, crCol);
+    }
+
+    // ── Column 2: Per-type breakdown ──────────────────────────────────────────
+    CARD(col2x, "REQUEST BREAKDOWN", C_BLUE)
+    {
+        // Three sub-rows: NORMAL / VIP / EMERGENCY
+        const char *typeNames[] = { "NORMAL",    "VIP",    "EMERGENCY" };
+        Color       typeCols[]  = { C_TEXT,      C_BRAND,  C_RED       };
+        int         typeCnt[]   = { m->numRequestsNormal,
+                                    m->numRequestsVip,
+                                    m->numRequestsEmergency };
+        float       typeWait[]  = { m->avgWaitNormal,
+                                    m->avgWaitVip,
+                                    m->avgWaitEmergency };
+
+        int total = m->numRequestsNormal + m->numRequestsVip
+                  + m->numRequestsEmergency;
+        int bw = colW - 20;
+        int ry = cardY + 26;
+
+        for (int i = 0; i < 3; i++) {
+            // Type label + count
+            DrawText(typeNames[i], col2x + 10, ry,      10, C_DIM);
+            DrawText(TextFormat("%d", typeCnt[i]),
+                                col2x + 10, ry + 12, 18, typeCols[i]);
+
+            // Avg wait (right-aligned inside the card)
+            const char *ws = TextFormat("%.0fs avg", typeWait[i]);
+            DrawText(ws, col2x + colW - MeasureText(ws, 11) - 10,
+                     ry + 16, 11, C_DIM);
+
+            // Proportional fill bar
+            float frac = (total > 0) ? (float)typeCnt[i] / (float)total : 0.0f;
+            int ry2 = ry + 34;
+            DrawRectangle(col2x + 10, ry2, bw,               4, C_BORDER);
+            DrawRectangle(col2x + 10, ry2, (int)(bw * frac), 4, typeCols[i]);
+
+            ry += 52;
+            if (i < 2)
+                DrawLine(col2x + 8, ry - 4,
+                         col2x + colW - 8, ry - 4, C_BORDER);
+        }
+    }
+
+    // ── Column 3: Performance ─────────────────────────────────────────────────
+    CARD(col3x, "PERFORMANCE", C_GREEN)
+    {
+        int py = cardY + 26;
+
+        // Utilization
+        float util = m->driverUtilization;
+        Color utilCol = (util > 0.8f) ? C_RED
+                      : (util > 0.5f) ? C_ORANGE : C_GREEN;
+        DrawText("DRIVER UTILIZATION", col3x + 10, py,      10, C_DIM);
+        DrawText(TextFormat("%.1f%%", util * 100.0f),
+                             col3x + 10, py + 12, 22, utilCol);
+        int bw = colW - 20;
+        DrawRectangle(col3x + 10, py + 38, bw,              5, C_BORDER);
+        DrawRectangle(col3x + 10, py + 38, (int)(bw * util),5, utilCol);
+        py += 54;
+
+        DrawLine(col3x + 8, py, col3x + colW - 8, py, C_BORDER);
+        py += 10;
+
+        // Avg wait times (all three in a compact grid)
+        DrawText("AVG WAIT TIMES", col3x + 10, py, 10, C_DIM);
+        py += 14;
+        const char *wl[] = { "NORM", "VIP", "EMER" };
+        float       wv[] = { m->avgWaitNormal, m->avgWaitVip, m->avgWaitEmergency };
+        Color       wc[] = { C_TEXT, C_BRAND, C_RED };
+        int         cw3  = (colW - 20) / 3;
+        for (int i = 0; i < 3; i++) {
+            int wx = col3x + 10 + i * cw3;
+            DrawText(wl[i],                     wx, py,      10, C_DIM);
+            DrawText(TextFormat("%.0fs", wv[i]), wx, py + 12, 16, wc[i]);
+        }
+        py += 34;
+
+        DrawLine(col3x + 8, py, col3x + colW - 8, py, C_BORDER);
+        py += 10;
+
+        // Surge
+        DrawText("SURGE PRICING", col3x + 10, py, 10, C_DIM);
+        if (m->surgeActive) {
+            DrawRectangleRounded(
+                (Rectangle){ col3x + 10, (float)(py + 12), 72, 20 },
+                0.3f, 4, C_RED);
+            DrawText("ACTIVE", col3x + 17, py + 16, 11, RAYWHITE);
+            DrawText(TextFormat("x%.1f", m->surgeMultiplier),
+                     col3x + 90, py + 14, 14, C_RED);
+        } else {
+            DrawText("OFF", col3x + 10, py + 12, 16, C_GREEN);
+        }
+    }
+
+    #undef CARD
+
+    // ── Divider + footer hint ─────────────────────────────────────────────────
+    DrawLine(SCREEN_W / 2 - totalW / 2, cardY + cardH + 16,
+             SCREEN_W / 2 + totalW / 2, cardY + cardH + 16, C_BORDER);
 
     const char *hint = "Press ESC or close the window to exit";
-    DrawText(hint, SCREEN_W / 2 - MeasureText(hint, 14) / 2, SCREEN_H - 44, 14, C_DIM);
+    DrawText(hint,
+             SCREEN_W / 2 - MeasureText(hint, 13) / 2,
+             SCREEN_H - 40, 13, C_DIM);
 }
 
 // dashboard 
@@ -396,7 +534,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     {
         int bw = SIDEBAR_W - PAD * 2 - 22;
         const char *wLabels[] = { "NORM", "VIP",  "EMER" };
-        Color wColors[] = { C_DIM,  C_BRAND, C_RED };
+        Color wColors[] = { C_TEXT, C_BRAND_TEXT, C_RED_TEXT };
         float wTimes[]  = {
             s->metrics.avgWaitNormal,
             s->metrics.avgWaitVip,
@@ -436,7 +574,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     secLabel("MANUAL REQUEST", PAD + 6, SCREEN_H - 158);
 
     const char *typeLabel[] = { "NORMAL", "VIP", "EMERGENCY" };
-    Color typeColor[] = {C_TEXT, C_BRAND, C_RED};
+    Color typeColor[] = {C_TEXT, C_BG, C_RED};
     Color typeBg[]    = {
         C_PANEL2,
         (Color){  8, 50, 70, 255 },
@@ -460,7 +598,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     {
         const char *bt = "SUBMIT  [R]";
         DrawText(bt, PAD + 4 + (SIDEBAR_W - PAD * 2 + 2 - MeasureText(bt, 13)) / 2,
-                 SCREEN_H - 96, 13, C_DARK);
+                 SCREEN_H - 96, 13, C_BG);
     }
 
     // end simulation button
@@ -470,8 +608,8 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
     {
         const char *et = "END SIMULATION  [E]";
         DrawText(et,
-                 PAD + 6 + (SIDEBAR_W - PAD * 2 - MeasureText(et, 12)) / 2,
-                 (int)(END_BTN.y + 12), 12, RAYWHITE);
+         (int)(END_BTN.x + (END_BTN.width - MeasureText(et, 12)) / 2),
+         (int)(END_BTN.y + 12), 12, RAYWHITE);
     }
 
     //  main content area
@@ -523,7 +661,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
             DrawRectangleRounded((Rectangle){ cx + 10, cy + 30, 36, 14 }, 0.4f, 4, C_ORANGE);
             DrawText("PLUS", cx + 13, cy + 33, 10, RAYWHITE);
         } else {
-            DrawText("STD", cx + 10, cy + 33, 11, C_DIM);
+            DrawText("STD", cx + 10, cy + 33, 11, C_TEXT);
         }
 
         // request info or idle label
@@ -532,7 +670,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
             // green bottom progress bar to indicate active trip
             DrawRectangle(cx + 1, cy + CARD_H - 4, CARD_W - 2, 3, C_GREEN);
         } else {
-            DrawText("IDLE", cx + 10, cy + 56, 12, C_DIM);
+            DrawText("IDLE", cx + 10, cy + 56, 12, C_TEXT);
         }
 
         // flash outline (fades out over time)
@@ -567,7 +705,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
         int sx2 = mx + i * (statW + PAD);
         DrawRectangle(sx2, statsY, statW, 38, C_PANEL);
         DrawRectangle(sx2, statsY, statW,  3, stats[i].col);  // top accent
-        DrawText(stats[i].label, sx2 + 8, statsY + 8,  10, C_DIM);
+        DrawText(stats[i].label, sx2 + 8, statsY + 8,  10, C_TEXT);
         DrawText(stats[i].val, sx2 + 8, statsY + 20, 14, stats[i].col);
     }
 
@@ -631,7 +769,7 @@ static void drawDashboard(const SharedState *s, int manualType, int pendingMaxRo
 
             // wait time — colour-coded
             int wt = s->pendingRequests[i].waitTicks;
-            Color wtCol = (wt > 20) ? C_RED : (wt > 10) ? C_ORANGE : C_DIM;
+            Color wtCol = (wt > 20) ? C_RED_TEXT : (wt > 10) ? C_ORANGE : C_TEXT;
             DrawText(TextFormat("%dt", wt), mx + 220, ry + 3, 13, wtCol);
         }
         if (s->pendingCount > pendingMaxRows)
