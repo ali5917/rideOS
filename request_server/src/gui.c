@@ -46,7 +46,7 @@ int numDriversGrid[10][9] = {
 // 10 rows, 9 columns
 int bgGrid[10][9] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 2, 2, 0},
+    {0, 0, 0, 0, 0, 2, 2, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -916,7 +916,9 @@ void runGui() {
                 if (clicked) {
                     int val = gridValueAt(bgGrid, mouse);
                     if (val == 1) screen = GUI_CONFIG;
-                    if (val == 2) screen = GUI_CONTRIBUTORS;
+                    if (val == 2) {
+                        screen = GUI_CONTRIBUTORS;
+                    }
                 }
                 break;
 
@@ -1039,9 +1041,9 @@ void runGui() {
                     screen = GUI_METRICS;
                 }
                 break;
-
+            }
             case GUI_CONTRIBUTORS:
-                if (clicked || IsKeyPressed(KEY_ESCAPE))
+                if (clicked || IsKeyPressed(KEY_B))
                     screen = GUI_INTRO;
                 break;
 
@@ -1090,11 +1092,10 @@ void runGui() {
                     DrawText("Click anywhere to go back", 100, 160, 20, C_BG);
                 }
                 break;
-        }
+            }
 
         EndDrawing();
     }
-    
 cleanup:
     #undef START_SIM
     if (mainPid > 0) kill(mainPid, SIGINT);
@@ -1103,3 +1104,4 @@ cleanup:
     if (configLoaded) UnloadTexture(configTex);
     if (contribLoaded) UnloadTexture(contribTex);
     CloseWindow();
+}
