@@ -20,12 +20,14 @@ RideOS is a concurrent system designed to simulate the complexities of a real-ti
     - **POSIX Shared Memory & Semaphores**: Facilitates high-speed state synchronization between processes, protected by semaphores to prevent race conditions during concurrent access.
 - **Real-Time Resource Monitoring**: A Raylib-based dashboard that visualizes driver states (Idle, Busy, Offline) and pending request queues.
 
-## System Architecture
+## Operational Workflow
 
-The simulation is partitioned into two distinct processes:
-
-1.  **Main Server (Backend)**: Responsible for the core simulation logic. It manages the global driver pool, maintains the request queue, and executes the dispatcher thread which performs the matching logic.
-2.  **Request Server (Frontend)**: Handles user interaction and request generation. It hosts an automated request generator thread and provides a GUI for manual request injection and system configuration.
+1.  **Request Generation**: The Request Server hosts a background thread that generates random `PipeRequest` structures or accepts manual user input.
+2.  **IPC Transmission**: Messages are serialized and transmitted through a named pipe (`/tmp/rideos_pipe`) to the Main Server.
+3.  **Thread Orcherstration**: Upon receiving a request, the Main Server spawns a dedicated **Request Thread** to manage the lifecycle of that specific customer.
+4.  **Priority Queuing**: Requests are inserted into a synchronized priority queue. The **Dispatcher Thread** constantly monitors the queue and the available **Driver Pool**.
+5.  **Synchronization**: When a driver is matched, the Dispatcher uses `pthread_cond_signal` to wake the waiting Request Thread, which then hands off control to a **Ride Thread** to simulate the trip duration.
+6.  **State Synchronization**: The Main Server continuously updates a **Shared Memory** segment (`/rideos_shm`) with the latest fleet telemetry, which the Request Server reads to update the GUI at 60 FPS.
 
 ## Visual Interface
 
@@ -47,28 +49,36 @@ A summarized report generated upon simulation termination, displaying system eff
 
 ## Build and Execution
 
-### Requirements
-- GCC (C11 Standard)
-- Raylib Development Libraries
-- POSIX Thread Support (lpthread)
+### Prerequisites
+The system is designed for Linux-based environments (or WSL on Windows) and requires:
+- **GCC**: C11 standard support.
+- **Raylib**: Version 4.5 or higher.
+- **Pthreads**: POSIX thread library.
+- **Realtime Extensions**: `lrt` library for shared memory and semaphores.
 
 ### Compilation
-Use the provided Makefile to compile both modules:
+The project includes a centralized `Makefile` that handles dependency linking and binary generation:
 ```bash
+# Clean previous builds and recompile all modules
+make clean
 make
 ```
+This generates two executables: `main_server_bin` and `request_server_bin`.
 
 ### Execution Sequence
-To establish the IPC channels correctly, the Main Server must be initialized first:
+To ensure the IPC channels (Pipes and Shared Memory) are correctly initialized by the owner, follow this exact sequence:
 
-1. **Initialize Main Server**:
+1. **Step 1: Start the Backend (Main Server)**
    ```bash
    ./main_server_bin
    ```
-2. **Launch GUI Dashboard**:
+   *The server will initialize the driver pool and start the dispatcher. It will wait until the GUI sends a configuration message.*
+
+2. **Step 2: Launch the GUI (Request Server)**
    ```bash
    ./request_server_bin
    ```
+   *Click 'S' or the Start button to move to the fleet configuration, then select your driver count to begin the simulation.*
 
 ## User Interface Controls
 
@@ -77,12 +87,4 @@ To establish the IPC channels correctly, the Main Server must be initialized fir
 | **R** | Submit a manual request into the IPC pipe |
 | **TAB** | Cycle through request priority levels (Normal, VIP, Emergency) |
 | **E** | Trigger simulation termination and generate metrics report |
-| **ESC** | Graceful shutdown of the process |
-
-## Simulation Metrics
-Upon termination, the system generates a performance report based on the following telemetry:
-- **Wait Time Analysis**: Calculation of average response time per priority tier.
-- **Throughput & Efficiency**: Tracking of completed rides versus cancelled/timed-out requests.
-- **Resource Utilization**: Percentage-based tracking of driver fleet activity.
-
----
+| **ESC** | Graceful shutdown and resource cleanup |
