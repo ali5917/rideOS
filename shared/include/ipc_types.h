@@ -24,8 +24,7 @@ typedef enum {
 
 typedef enum {
     DRIVER_STANDARD,
-    DRIVER_PLUS,
-    DRIVER_ELITE
+    DRIVER_PLUS
 } DriverCategory;
 
 #endif

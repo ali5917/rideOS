@@ -11,9 +11,9 @@ extern pthread_mutex_t driverMutex;
 extern volatile sig_atomic_t systemRunning;
 
 int driverCanHandle(DriverCategory category, RequestType type) {
-	if (type == NORMAL) return 1;
-	if (type == VIP && (category == DRIVER_PLUS || category == DRIVER_ELITE)) return 1;
-	if (type == EMERGENCY && category == DRIVER_ELITE) return 1;
+	if (type == NORMAL) return (category == DRIVER_STANDARD);
+	if (type == VIP) return (category == DRIVER_PLUS);
+	if (type == EMERGENCY) return (category == DRIVER_STANDARD || category == DRIVER_PLUS);
 	return 0;
 }
 
@@ -22,7 +22,12 @@ int driverFindAvailable(RequestType type) {
 
 	if (type == EMERGENCY) {
 		for (int i = 0; i < numDrivers; i++) {
-			if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
+			if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
+				return i;
+			}
+		}
+		for (int i = 0; i < numDrivers; i++) {
+			if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_STANDARD) {
 				return i;
 			}
 		}
@@ -35,11 +40,6 @@ int driverFindAvailable(RequestType type) {
 				return i;
 			}
 		}
-		for (int i = 0; i < numDrivers; i++) {
-			if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
-				return i;
-			}
-		}
 		return -1;
 	}
 
@@ -48,17 +48,6 @@ int driverFindAvailable(RequestType type) {
 			return i;
 		}
 	}
-	for (int i = 0; i < numDrivers; i++) {
-		if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
-			return i;
-		}
-	}
-	for (int i = 0; i < numDrivers; i++) {
-		if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
-			return i;
-		}
-	}
-
 	return match;
 }
 
