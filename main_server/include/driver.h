@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "../../shared/include/ipc_types.h"
+#include "request.h"
 
 typedef struct Driver {
     int ID;
@@ -21,5 +22,9 @@ typedef struct Driver {
 extern Driver driverPool[MAX_DRIVERS];
 extern int numDrivers;
 extern pthread_mutex_t driverMutex;
+
+int driverCanHandle(DriverCategory category, RequestType type);
+int driverFindAvailable(RequestType type);
+void* driverLifecycleThread(void *arg);
 
 #endif

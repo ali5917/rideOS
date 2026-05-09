@@ -17,59 +17,6 @@ extern int numDrivers;
 extern pthread_mutex_t driverMutex;
 extern volatile sig_atomic_t systemRunning;
 
-// check if a driver category can handle a request type
-static int canHandle(DriverCategory category, RequestType type) {
-    if (type == NORMAL) return 1;
-    if (type == VIP && (category == DRIVER_PLUS || category == DRIVER_ELITE)) return 1;
-    if (type == EMERGENCY && category == DRIVER_ELITE) return 1;
-    return 0;
-}
-
-static int findPreferredDriverIndex(RequestType type) {
-    int match = -1;
-
-    if (type == EMERGENCY) {
-        for (int i = 0; i < numDrivers; i++) {
-            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    if (type == VIP) {
-        for (int i = 0; i < numDrivers; i++) {
-            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
-                return i;
-            }
-        }
-        for (int i = 0; i < numDrivers; i++) {
-            if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    for (int i = 0; i < numDrivers; i++) {
-        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_STANDARD) {
-            return i;
-        }
-    }
-    for (int i = 0; i < numDrivers; i++) {
-        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_PLUS) {
-            return i;
-        }
-    }
-    for (int i = 0; i < numDrivers; i++) {
-        if (driverPool[i].status == DRIVER_ONLINE && driverPool[i].category == DRIVER_ELITE) {
-            return i;
-        }
-    }
-
-    return match;
-}
-
 static const char* getRequestTypeString(RequestType type) {
     switch (type) {
         case EMERGENCY: return "EMERGENCY";
@@ -103,15 +50,7 @@ void* dispatcherThread(void* arg) {
         int foundDriverIndex = -1;
         pthread_mutex_lock(&driverMutex);
 
-        foundDriverIndex = findPreferredDriverIndex(req->type);
-        if (foundDriverIndex == -1) {
-            for (int i = 0; i < numDrivers; i++) {
-                if (driverPool[i].status == DRIVER_ONLINE && canHandle(driverPool[i].category, req->type)) {
-                    foundDriverIndex = i;
-                    break;
-                }
-            }
-        }
+        foundDriverIndex = driverFindAvailable(req->type);
 
         if (foundDriverIndex != -1) {
             // assign the driver
