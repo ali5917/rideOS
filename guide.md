@@ -27,6 +27,7 @@ Mutexes ensure **mutual exclusion**, meaning only one thread can execute a criti
 #### 1. `requestQueue.lock`
 *   **Location**: Initialized in `main_server/src/queue.c`.
 *   **Purpose**: Protects the Priority Queue's internal heap (`pq->heap`) and `size` variable from race conditions.
+*   **Problem Solved**: Prevents heap corruption. Without this, if the dispatcher tries to extract a request at the exact same moment a new `requestThread` tries to insert one, the heap array and size counter would become corrupted, causing segfaults or lost requests.
 *   **Blocked By**: 
     *   `insertRequest()`: Blocks at the start to safely insert a request into the heap.
     *   `getRequest()`: Blocks at the start to safely remove the highest-priority request. (Note: It temporarily releases the lock while blocked on the `notEmpty` condition variable).
@@ -37,6 +38,7 @@ Mutexes ensure **mutual exclusion**, meaning only one thread can execute a criti
 #### 2. `driverMutex`
 *   **Location**: Externally declared in `main_server/src/driver.c`.
 *   **Purpose**: Protects the global `driverPool` array so that multiple threads don't assign the same driver to different requests simultaneously.
+*   **Problem Solved**: Prevents double-booking. Without this, the dispatcher might assign the same "Available" driver to two different requests simultaneously, or it might try to assign a driver at the exact moment the driver randomly decides to go offline.
 *   **Blocked By**:
     *   `dispatcherThread()` (in `dispatch.c`): Blocks right before searching for an available driver using `driverFindAvailable()`. If it finds one, it marks the driver as `DRIVER_BUSY`.
     *   `rideThread()` (in `request.c`): Blocks at the end of the simulated ride to mark the driver back to `DRIVER_ONLINE` and increment their completed rides.
@@ -46,6 +48,7 @@ Mutexes ensure **mutual exclusion**, meaning only one thread can execute a criti
 #### 3. `req->waitMutex`
 *   **Location**: Initialized inside each specific `RideRequest` struct.
 *   **Purpose**: Protects the state/status of an individual request, ensuring the dispatcher and the request's own thread don't conflict (e.g., dispatcher assigns a driver at the exact same millisecond the request decides to timeout and cancel itself).
+*   **Problem Solved**: Prevents use-after-free crashes. Without it, the dispatcher could assign a driver to a request that is simultaneously cancelling itself and freeing its memory.
 *   **Blocked By**:
     *   `requestThread()` (in `request.c`): Blocks before checking if the status is `REQUEST_WAITING`. It releases the lock while waiting on `assignedCond`, re-acquires it upon waking, and then updates the status to `REQUEST_CANCELLED` if a timeout occurred.
     *   `dispatcherThread()` (in `dispatch.c`): Blocks right after pulling the request from the queue to ensure it hasn't already timed out. It blocks *again* right before assigning a driver to ensure a timeout hasn't occurred while it was searching for a driver.
@@ -53,6 +56,7 @@ Mutexes ensure **mutual exclusion**, meaning only one thread can execute a criti
 
 #### 4. `metrics.lock` & `logger.lock`
 *   **Purpose**: Protects the global `metrics` structure and the `Logger` file descriptor, respectively.
+*   **Problem Solved**: Prevents torn writes and lost updates. Without these, log messages from different threads would jumble together in the log file, and concurrent `totalCompleted++` operations would overwrite each other, causing inaccurate statistics.
 *   **Blocked By**: Any thread calling `metricsRecordCreated`, `metricsRecordCompleted`, `metricsRecordCancelled`, `metricsSnapshot`, or `loggerLogEvent`. 
 *   **Unblocked By**: The same thread immediately after the counter is incremented or the log string is written (`fprintf` + `fflush`) to the file.
 
@@ -61,6 +65,7 @@ Condition variables allow threads to sleep (block) until a specific condition be
 
 #### 1. `requestQueue.notEmpty`
 *   **Location**: Initialized in `main_server/src/queue.c`.
+*   **Problem Solved**: Solves the "busy-waiting" problem. Without this condition variable, the dispatcher would have to use an infinite `while(queue.size == 0)` loop to wait for requests. This would burn 100% of the CPU doing nothing. `notEmpty` allows the dispatcher to sleep at 0% CPU until there is actually work to do.
 *   **When/Who gets Blocked**: The `dispatcherThread` (by calling `getRequest()`) calls `pthread_cond_wait()`. It gets put to sleep if it checks the priority queue and finds that its `size == 0`.
 *   **When/Who Unblocks it**: 
     *   **Signaled by**: `insertRequest()` calls `pthread_cond_signal()` every time a new request is successfully added to the queue. This wakes up the sleeping dispatcher so it can assign a driver.
@@ -68,6 +73,7 @@ Condition variables allow threads to sleep (block) until a specific condition be
 
 #### 2. `req->assignedCond`
 *   **Location**: Initialized inside each specific `RideRequest` struct.
+*   **Problem Solved**: Allows a specific request thread to sleep efficiently while waiting for a driver, rather than polling the `req->status` constantly. It also elegantly solves the timeout problem natively using `pthread_cond_timedwait`.
 *   **When/Who gets Blocked**: The `requestThread()` handling that specific user request calls `pthread_cond_timedwait()`. It gets put to sleep, waiting for the dispatcher to find a driver. It will block until either a driver is assigned OR its `timeoutSeconds` limit expires.
 *   **When/Who Unblocks it**: The `dispatcherThread` calls `pthread_cond_signal()` immediately after it successfully assigns a driver ID to the request and changes its status to `REQUEST_ASSIGNED`.
 
@@ -76,6 +82,7 @@ Semaphores are used for synchronization. In this project, a named semaphore acts
 
 #### 1. `SEM_SHM_LOCK` (Named Binary Semaphore)
 *   **Location**: Used in both `main_server/src/ipc.c` and `request_server/src/ipc.c`. It's initialized to `1` (meaning it's available).
+*   **Problem Solved**: Prevents "torn reads" across different processes. Without it, the Request Server GUI might read the shared memory at the exact millisecond the Main Server is overwriting it. This would cause the GUI to render corrupted data (e.g., showing a driver as both available and busy, or a request with garbage data).
 *   **When/Who gets Blocked**: 
     *   The **Main Server** calls `sem_wait()` before calling `memcpy` to write the latest `SharedState` to POSIX Shared Memory. It blocks if the Request Server is currently reading the memory.
     *   The **Request Server** calls `sem_wait()` before reading the `SharedState`. It blocks if the Main Server is currently updating it.
