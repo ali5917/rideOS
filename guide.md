@@ -51,7 +51,7 @@ Mutexes ensure **mutual exclusion**, meaning only one thread can execute a criti
 *   **Problem Solved**: Prevents use-after-free crashes. Without it, the dispatcher could assign a driver to a request that is simultaneously cancelling itself and freeing its memory.
 *   **Blocked By**:
     *   `requestThread()` (in `request.c`): Blocks before checking if the status is `REQUEST_WAITING`. It releases the lock while waiting on `assignedCond`, re-acquires it upon waking, and then updates the status to `REQUEST_CANCELLED` if a timeout occurred.
-    *   `dispatcherThread()` (in `dispatch.c`): Blocks right after pulling the request from the queue to ensure it hasn't already timed out. It blocks *again* right before assigning a driver to ensure a timeout hasn't occurred while it was searching for a driver.
+    *   `dispatcherThread()` (in `disp\atch.c`): Blocks right after pulling the request from the queue to ensure it hasn't already timed out. It blocks *again* right before assigning a driver to ensure a timeout hasn't occurred while it was searching for a driver.
 *   **Unblocked By**: The respective thread after updating the request's status (e.g., changing to `REQUEST_ASSIGNED` or `REQUEST_CANCELLED`).
 
 #### 4. `metrics.lock` & `logger.lock`
